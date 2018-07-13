@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package bramble;
+
+
+message DemoMessage {
+    map<string,string> b3_values = 4;
+}
+
+service DemoService {
+    rpc DemoRPC (DemoMessage) returns (DemoMessage) {}
+}
+

@@ -6,6 +6,8 @@ from datetime import datetime
 from b3 import b3_span_id, values, b3_trace_id
 from pythonjsonlogger import jsonlogger
 
+from gcptracelogging import global_vars
+
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     def add_fields(self, log_record, record, message_dict):
@@ -31,7 +33,7 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
         gcp_log_record = {
             'severity': log_severities[record.levelname],
             'time': datetime.fromtimestamp(record.created),
-            'logging.googleapis.com/trace': f'projects/bbc-connected-data/traces/{b3_values[b3_trace_id]}',
+            'logging.googleapis.com/trace': f'projects/{global_vars.gcp_project_name}/traces/{b3_values[b3_trace_id]}',
             'logging.googleapis.com/spanId': b3_values[b3_span_id],
             'logging.googleapis.com/sourceLocation': {
                 'file': record.filename,
@@ -45,8 +47,10 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
         log_record.pop('exc_info', None)
 
 
-def configure_json_logging():
+def configure_json_logging(project_name):
     """ Create a log record handler with a custom JSON formatter, then add it to the root logger."""
+    global_vars.gcp_project_name = project_name
+
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(CustomJsonFormatter())
 

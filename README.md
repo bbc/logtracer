@@ -37,6 +37,10 @@ Trace API and they are linked to the logs by tracing metadata as shown below.
 
 
 ## Usage
+### Initial setup
+- Install `pip install GIT_URL`.
+- You must provide authentication for the client to be able to access the Stackdriver API. This is achievable on your local machine 
+by running `gcloud auth login`. When running in GKE, these details should be picked up automatically.
 ### JSON Logger
 To use the Stackdriver-compliant JSON logs, run the `configure_logging` function before using any loggers.
 This will add a new handler to the root logger which writes logs in JSON. This only needs to be run once in your application
@@ -47,8 +51,8 @@ import logging
 configure_json_logging('gcp-project-name')
 logger = logging.getLogger('app')
 ```
-You must provide authentication for the client to be able to access the Stackdriver API. This is achievable on your local machine 
-by running `gcloud auth login`.
+
+### Stackdriver Trace
 To create a span and post the parameters to the Stackdriver Trace API use the `start_span` and `end_span` functions.
 
 ```python
@@ -63,8 +67,10 @@ start_span(request.b3_values, 'grpc', 'demoFunc', 'http://localhost:50055')
 do_stuff()
 end_span()
 ```
-These should be run before and after a request is handled. The logger will now add the span ID and the trace ID to log entries. Passing in `request.headers` allows any tracing 
-parameters from an upstream http call to be picked up and used. In the example, these are implemented as decorators.
+These should be run before and after a request is handled.
+The logger will add the span ID and the trace ID to log entries, always write log entries inside a span or else they wont 
+be linked to a span. Passing in the headers/values from an upstream request allows any tracing IDs from an upstream call to be picked up and used. 
+In the example, decorators are used to handle span creation.
 
 When making a downstream call, a subspan should be created using the `TracedSubSpan()` context manager and the tracing 
 parameters should be sent with the call. 
@@ -72,7 +78,8 @@ parameters should be sent with the call.
 # http
 with TracedSubSpan() as b3_headers:
     requests.get('http://example.com', headers=b3_headers)
-
+```
+```
 # grpc
 with TracedSubSpan() as b3_headers:
     message = DemoMessage(
@@ -82,7 +89,7 @@ with TracedSubSpan() as b3_headers:
     stub.DemoRPC(message)
 ```
 
-
+### Example
 See example usage with a Flask app and a gRPC app in the `examples/` directory. Output from running:
 ```
 {"severity": "INFO", "time": "2018-07-13T11:42:23.351930", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 36, "function": "run_flask_examples"}, "message": "demoLogger - Single call to Flask root endpoint:"}
@@ -110,18 +117,8 @@ See example usage with a Flask app and a gRPC app in the `examples/` directory. 
 {"severity": "INFO", "time": "2018-07-13T11:42:24.550120", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 59, "function": "run_grpc_examples"}, "message": "demoLogger - Done"}
 ```
 
-always start span before log
-
-init with project id
 
 ## Notes
 \* Some fields may not be parsed as expected, this is likely due to the version of the 
 [fluentd plugin]([fluentd daemon](https://github.com/GoogleCloudPlatform/fluent-plugin-google-cloud)) not being the latest. 
 For example, the `logging.googleapis.com/span_id` field is only supported in more recent versions of the plugin.
-
-start before log
-
-## todo
-add project_id in configure logging
-if no project id then dont add google strings!
-write tests

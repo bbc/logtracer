@@ -47,6 +47,7 @@ This will add a new handler to the root logger which writes logs in JSON. This o
 and must be called with the Google Cloud Platform project name.
 ```
 import logging 
+from gcptracelogging.jsonlog import configure_json_logging`
 
 configure_json_logging('gcp-project-name')
 logger = logging.getLogger('app')
@@ -56,12 +57,12 @@ logger = logging.getLogger('app')
 To create a span and post the parameters to the Stackdriver Trace API use the `start_span` and `end_span` functions.
 
 ```python
+from gcptracelogging.tracing import start_span, end_span, TracedSubSpan`
+
 # http
 start_span(request.headers, 'http', request.path, 'http://localhost:5000')
 do_stuff()
 end_span()
-```
-```python
 # grpc
 start_span(request.b3_values, 'grpc', 'demoFunc', 'http://localhost:50055')
 do_stuff()
@@ -78,8 +79,7 @@ parameters should be sent with the call.
 # http
 with TracedSubSpan() as b3_headers:
     requests.get('http://example.com', headers=b3_headers)
-```
-```
+
 # grpc
 with TracedSubSpan() as b3_headers:
     message = DemoMessage(

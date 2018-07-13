@@ -16,7 +16,8 @@ grpc_port = 50055
 def log_event(event):
     """Log any requests and responses made to and from the gRPC server."""
     def wrapper(self, request, context):
-        start_span(request.b3_values, 'demoGRPC', event.__name__, f'localhost:{grpc_port}')
+        b3_values = getattr(request, 'b3_values', {})
+        start_span(b3_values, 'demoGRPC', event.__name__, f'localhost:{grpc_port}')
         logger.info(f'gRPC - Call {event.__name__}')
         event_response = event(self, request, context)
         logger.info(f'gRPC - Return {event.__name__}')

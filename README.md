@@ -38,7 +38,7 @@ Trace API and they are linked to the logs by tracing metadata as shown below.
 
 ## Usage
 ### Initial setup
-- Install `pip install GIT_URL`.
+- Install `pip install git+https://github.com/bbc/python-gcp-trace-logging@BRANCH/COMMIT_HASH/TAG_NAME`.
 - You must provide authentication for the client to be able to access the Stackdriver API. This is achievable on your local machine 
 by running `gcloud auth login`. When running in GKE, these details should be picked up automatically.
 ### JSON Logger

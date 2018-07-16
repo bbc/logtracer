@@ -1,7 +1,7 @@
 import logging
 
-from gcptracelogging import global_vars
-from gcptracelogging.jsonlog import configure_json_logging, CustomJsonFormatter
+from stackdriver_logging import global_vars
+from stackdriver_logging.jsonlog import configure_json_logging, CustomJsonFormatter
 
 
 def test_configure_json_logging():

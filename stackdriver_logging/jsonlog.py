@@ -1,12 +1,12 @@
 import logging
-import sys
 import traceback
 from datetime import datetime
 
+import sys
 from pythonjsonlogger import jsonlogger
 
-from gcptracelogging import b3
-from gcptracelogging import global_vars
+from stackdriver_logging import b3
+from stackdriver_logging import global_vars
 
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):

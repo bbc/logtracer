@@ -1,5 +1,4 @@
 import logging
-import socket
 
 import grpc
 import requests
@@ -8,7 +7,7 @@ from flask import Flask, jsonify, request
 from examples.grpc_resources.grpc_demo_pb2 import DemoMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import grpc_port
-from gcptracelogging.tracing import start_span, end_span, TracedSubSpan
+from stackdriver_logging.tracing import start_span, end_span, Trace
 
 # flask
 app = Flask('demoFlaskApp')
@@ -47,7 +46,7 @@ def index():
 
 @app.route('/grpc', methods=['GET'])
 def grpc():
-    with TracedSubSpan() as b3_headers:
+    with Trace() as b3_headers:
         message = DemoMessage(
             b3_values=b3_headers
         )
@@ -57,7 +56,7 @@ def grpc():
 
 @app.route('/doublehttp', methods=['GET'])
 def doublehttp():
-    with TracedSubSpan() as b3_headers:
+    with Trace() as b3_headers:
         requests.get(f'http://localhost:{flask_port}', headers=b3_headers)
     return jsonify({})
 

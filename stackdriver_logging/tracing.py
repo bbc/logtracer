@@ -1,11 +1,12 @@
-import time
 from threading import Thread, local
 
-from gcptracelogging import b3
+import time
 from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
-from gcptracelogging import global_vars
+
+from stackdriver_logging import b3
+from stackdriver_logging import global_vars
 
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
 trace_client = TraceServiceClient()
@@ -24,7 +25,8 @@ def end_span():
     b3_values = b3.values()
     timestamp = _get_timestamp()
     span_info = {
-        'name': trace_client.span_path(global_vars.gcp_project_name, b3_values[b3.B3_TRACE_ID], b3_values[b3.B3_SPAN_ID]),
+        'name': trace_client.span_path(global_vars.gcp_project_name, b3_values[b3.B3_TRACE_ID],
+                                       b3_values[b3.B3_SPAN_ID]),
         'span_id': b3_values[b3.B3_SPAN_ID],
         'display_name': _truncate_str(g.span_display_name, limit=SPAN_DISPLAY_NAME_BYTE_LIMIT),
         'start_time': g.start_timestamp,
@@ -38,7 +40,7 @@ def end_span():
     b3.end_span()
 
 
-class TracedSubSpan(b3.SubSpan):
+class Trace(b3.SubSpan):
     def __enter__(self):
         g.child_span_count += 1
         return super().__enter__()

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 if __name__ == "__main__":
     setup(
-        name="gcptracelogging",
+        name="stackdriver_logging",
         version="0.1.1",
         author="Datalab",
         author_email="datalab@bbc.co.uk",
@@ -13,7 +13,7 @@ if __name__ == "__main__":
                     "Trace API.",
         long_description=long_description,
         long_description_content_type="text/markdown",
-        url="https://github.com/bbc/gcp-trace-logging",
+        url="https://github.com/bbc/stackdriver_logging",
         packages=find_packages(),
         classifiers=(
             "Programming Language :: Python :: 3.6",

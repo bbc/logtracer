@@ -1,4 +1,4 @@
-# Python GCP Trace Logging
+# Stackdriver Logging
 > Adds distributed tracing information to logger output and sends traces to the Stackdriver Trace API.
 
 ## Purpose

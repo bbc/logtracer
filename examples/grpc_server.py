@@ -1,11 +1,11 @@
 import logging
-import time
 from concurrent import futures
 
 import grpc
+import time
 
 from examples.grpc_resources import grpc_demo_pb2_grpc, grpc_demo_pb2
-from gcptracelogging.tracing import start_span, end_span
+from stackdriver_logging.tracing import start_span, end_span
 
 ONE_DAY_IN_SECONDS = 60 * 60 * 24
 logger = logging.getLogger('demoGRPCLogger')
@@ -15,6 +15,7 @@ grpc_port = 50055
 
 def log_event(event):
     """Log any requests and responses made to and from the gRPC server."""
+
     def wrapper(self, request, context):
         b3_values = getattr(request, 'b3_values', {})
         start_span(b3_values, 'demoGRPC', event.__name__, f'localhost:{grpc_port}')
@@ -23,6 +24,7 @@ def log_event(event):
         logger.info(f'gRPC - Return {event.__name__}')
         end_span()
         return event_response
+
     return wrapper
 
 

@@ -1,15 +1,15 @@
 import logging
-import time
 from threading import Thread
 
 import grpc
 import requests
+import time
 
 from examples.flask_server import flask_port, run_flask_server
 from examples.grpc_resources.grpc_demo_pb2 import DemoMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import run_grpc_server, grpc_port
-from gcptracelogging.jsonlog import configure_json_logging
+from stackdriver_logging.jsonlog import configure_json_logging
 
 # logging
 configure_json_logging('bbc-connected-data')
@@ -25,7 +25,8 @@ channel = grpc.insecure_channel(f'localhost:{grpc_port}')
 stub = DemoServiceStub(channel)
 
 
-# These demos illustrate simple calls to a Flask and gRPC server as well as a call from a Flask server to a gRPC server.
+# These demos illustrate simple calls to a Flask and gRPC server as well as a call from a Flask server to a gRPC
+# server.
 def run_flask_examples():
     server_thread = Thread(target=run_flask_server)
     server_thread.start()
@@ -33,8 +34,8 @@ def run_flask_examples():
     time.sleep(1)
     # Call the root endpoint of the Flask server. On receiving the request, the server will run `before_request` which
     # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
-    # then runs `after_request` which closes the span. Every time `end_span` is called, logs are sent to the Stackdriver
-    # Trace API.
+    # then runs `after_request` which closes the span. Every time `end_span` is called, logs are sent to the
+    # Stackdriver Trace API.
     print('\n\n')
     logger.info('Single call to Flask root endpoint:')
     requests.get(f'http://localhost:{flask_port}/')
@@ -42,8 +43,8 @@ def run_flask_examples():
 
     print('\n\n')
     # Create a span as above, then pass those tracing parameters to a call to the root endpoint. This will create a new
-    # subspan with the same trace ID as the initial request and a new span ID will be generated. Confirm this in the log
-    # outputs.
+    # subspan with the same trace ID as the initial request and a new span ID will be generated. Confirm this in the
+    # log outputs.
     logger.info('Double call to Flask endpoints:')
     requests.get(f'http://localhost:{flask_port}/doublehttp')
     logger.info('Done')

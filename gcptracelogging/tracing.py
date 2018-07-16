@@ -53,10 +53,15 @@ def _send_span(span_info):
 
 def _get_timestamp():
     now = time.time()
-    seconds = int(now)
-    nanos = int((now - seconds) * 10 ** 9)
+    seconds, nanos = _to_seconds_and_nanos(now)
     timestamp = Timestamp(seconds=seconds, nanos=nanos)
     return timestamp
+
+
+def _to_seconds_and_nanos(fractional_seconds):
+    seconds = int(fractional_seconds)
+    nanos = int((fractional_seconds - seconds) * 10 ** 9)
+    return seconds, nanos
 
 
 def _truncate_str(str_to_truncate, limit):

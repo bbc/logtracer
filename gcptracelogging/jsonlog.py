@@ -3,9 +3,9 @@ import sys
 import traceback
 from datetime import datetime
 
-from b3 import b3_span_id, values, b3_trace_id
 from pythonjsonlogger import jsonlogger
 
+from gcptracelogging import b3
 from gcptracelogging import global_vars
 
 
@@ -29,12 +29,13 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
             tb_str = "\n".join(traceback.format_tb(tb))
             record.message = f"""Exception: {exception_class.__name__}({str(exception)})\nTraceback:\n{tb_str}"""
 
-        b3_values = values()
+        b3_values = b3.values()
         gcp_log_record = {
             'severity': log_severities[record.levelname],
             'time': datetime.fromtimestamp(record.created),
-            'logging.googleapis.com/trace': f'projects/{global_vars.gcp_project_name}/traces/{b3_values[b3_trace_id]}',
-            'logging.googleapis.com/spanId': b3_values[b3_span_id],
+            'logging.googleapis.com/trace': f'projects/{global_vars.gcp_project_name}/traces/'
+                                            f'{b3_values[b3.B3_TRACE_ID]}',
+            'logging.googleapis.com/spanId': b3_values[b3.B3_SPAN_ID],
             'logging.googleapis.com/sourceLocation': {
                 'file': record.filename,
                 'line': record.lineno,

@@ -2,3 +2,4 @@ requests==2.19.1
 Flask==1.0.2
 grpcio==1.10.0
 grpcio-tools==1.10.0
+protobuf==3.6.0

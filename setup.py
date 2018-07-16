@@ -22,6 +22,7 @@ if __name__ == "__main__":
         install_requires=[
             'python-json-logger==0.1.9',
             'B3-Propagation==0.1.5',
-            'google-cloud-trace==0.19.0'
+            'google-cloud-trace==0.19.0',
+            'protobuf==3.6.0'
         ]
     )

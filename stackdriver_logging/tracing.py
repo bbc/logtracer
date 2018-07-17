@@ -1,6 +1,6 @@
+import time
 from threading import Thread, local
 
-import time
 from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
@@ -14,9 +14,10 @@ g = local()
 b3.TRACE_LEN = 32
 
 
-def start_span(incoming_headers, service_name, request_path, hostname):
+def start_span(incoming_headers, service_name, request_path, hostname=None):
+    # hostname removed from span display name
     g.start_timestamp = _get_timestamp()
-    g.span_display_name = f'{service_name}:{request_path} [{hostname}]'
+    g.span_display_name = f'{service_name}:{request_path}'
     g.child_span_count = 0
     return b3.start_span(incoming_headers)
 

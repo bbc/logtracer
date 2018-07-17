@@ -23,7 +23,7 @@ in the entry, any fields not recognised are thrown into a `jsonPayload` field. <
 writes the logs in JSON using [python-json-logger](https://github.com/madzak/python-json-logger), and adds extra metadata which Stackdriver Logs expects.
 
 
-Two important pieces of metadata added are the `span id` and the `trace id` using [B3-Propagation](https://github.com/davidcarboni/B3-Propagation). These parameters make it possible to trace 
+Two important pieces of metadata added are the `span id` and the `trace id` using code from [B3-Propagation](https://github.com/davidcarboni/B3-Propagation). These parameters make it possible to trace 
 requests across different services, this approach is described in more detail in the 
 [openzipkin/b3-propagation](https://github.com/openzipkin/b3-propagation) repository. 
 
@@ -42,7 +42,7 @@ Trace API and they are linked to the logs by tracing metadata as shown below.
 - You must provide authentication for the client to be able to access the Stackdriver API. This is achievable on your local machine 
 by running `gcloud auth login`. When running in GKE, these details should be picked up automatically.
 ### JSON Logger
-To use the Stackdriver-compliant JSON logs, run the `configure_logging` function before using any loggers.
+To use the Stackdriver-compliant JSON logs, run the `configure_json_logging` function before using any loggers.
 This will add a new handler to the root logger which writes logs in JSON. This only needs to be run once in your application
 and must be called with the Google Cloud Platform project name.
 ```
@@ -120,5 +120,5 @@ See example usage with a Flask app and a gRPC app in the `examples/` directory. 
 
 ## Notes
 \* Some fields may not be parsed as expected, this is likely due to the version of the 
-[fluentd plugin]([fluentd daemon](https://github.com/GoogleCloudPlatform/fluent-plugin-google-cloud)) not being the latest. 
+[fluentd plugin](https://github.com/GoogleCloudPlatform/fluent-plugin-google-cloud) not being the latest. 
 For example, the `logging.googleapis.com/span_id` field is only supported in more recent versions of the plugin.

@@ -7,7 +7,7 @@ from threading import local
 
 from binascii import hexlify
 
-_log = logging.getLogger(__name__)
+_log = logging.getLogger('b3')
 _log.setLevel(logging.INFO)
 
 # config

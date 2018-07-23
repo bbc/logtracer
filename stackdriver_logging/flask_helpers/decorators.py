@@ -1,7 +1,9 @@
+import functools
 import logging
 
 from flask import request
 
+from stackdriver_logging import global_vars
 from stackdriver_logging.tracing import start_traced_span, end_traced_span
 
 
@@ -13,20 +15,20 @@ class TracedRoute:
     can deal with it.
     """
 
-    def __init__(self, service_name):
-        self.service_name = service_name
-
     def __call__(self, f, *args, **kwargs):
+
+        @functools.wraps(f)
         def log_span(*args, **kwargs):
+            logger = logging.getLogger(global_vars.service_name)
             start_traced_span(request.headers, request.path)
-            logging.getLogger(self.service_name).info(f'{request.method} - {request.url}')
+            logger.info(f'{request.method} - {request.url}')
             try:
-                response = f(*args, **kwargs)
-                logging.getLogger(self.service_name).info(f'{response.status} - {request.url}')
+                response, status_number = f(*args, **kwargs)
+                logger.info(f'{response.status} - {request.url}')
                 end_traced_span()
-                return response
+                return response, status_number
             except Exception as e:
-                logging.getLogger(self.service_name).exception(e)
+                logger.exception(e)
                 end_traced_span()
                 raise e
 

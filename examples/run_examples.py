@@ -35,8 +35,8 @@ def run_flask_examples():
     time.sleep(1)
     # Call the root endpoint of the Flask server. On receiving the request, the server will run `before_request` which
     # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
-    # then runs `after_request` which closes the span. Every time `end_span` is called, logs are sent to the
-    # Stackdriver Trace API.
+    # then runs `after_request` logs the response code. When the request object is done with, the teardown callack
+    # closes the span. Every time `end_span` is called, logs are sent to the Stackdriver Trace API.
     print('\n\n')
     logger.info('Single call to Flask root endpoint:')
     requests.get(f'http://localhost:{flask_port}/')
@@ -48,6 +48,13 @@ def run_flask_examples():
     # log outputs.
     logger.info('Double call to Flask endpoints:')
     requests.get(f'http://localhost:{flask_port}/doublehttp')
+    logger.info('Done')
+
+    print('\n\n')
+    # Do as the first example but call endpoints which are 'excluded', these should not appear in the logs.
+    logger.info('Two calls to excluded endpoints:')
+    requests.get(f'http://localhost:{flask_port}/excludefull')
+    requests.get(f'http://localhost:{flask_port}/excludepartial')
     logger.info('Done')
 
 

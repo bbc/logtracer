@@ -34,7 +34,7 @@ def after_request(excluded_routes=None, excluded_routes_partial=None):
     return execute_after_request
 
 
-def teardown_request():
+def teardown_request(excluded_routes=None, excluded_routes_partial=None):
     """
     Close the span when the request is torn down (finished). Will log an exception if one caught.
 
@@ -44,7 +44,8 @@ def teardown_request():
     def execute_on_teardown(exception):
         if exception:
             get_logger().exception(exception)
-        end_traced_span()
+        if not _is_path_excluded(request.path, excluded_routes, excluded_routes_partial):
+            end_traced_span()
 
     return execute_on_teardown
 
@@ -66,7 +67,7 @@ def _is_path_excluded(path, excluded_routes, excluded_routes_partial):
         exclude = True
     elif excluded_routes_partial:
         for excluded_route_partial in excluded_routes_partial:
-            if request.path in excluded_route_partial:
+            if excluded_route_partial in request.path:
                 exclude = True
                 break
     return exclude

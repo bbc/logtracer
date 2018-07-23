@@ -1,5 +1,3 @@
-import logging
-
 import grpc
 import requests
 from flask import Flask, jsonify
@@ -20,10 +18,14 @@ logger = get_logger()
 logger.setLevel('DEBUG')
 
 # functions to run before and after a request is made
-app.before_request(before_request())
-app.after_request(after_request())
-app.teardown_request(teardown_request())
-
+exclude = {
+    'excluded_routes': ['/excludefull'],
+    'excluded_routes_partial': ['/excludepa']
+}
+app.before_request(before_request(**exclude))
+app.after_request(after_request(**exclude))
+app.teardown_request(teardown_request(**exclude))
+#
 # for grpc request
 channel = grpc.insecure_channel(f'localhost:{grpc_port}')
 stub = DemoServiceStub(channel)
@@ -47,6 +49,16 @@ def grpc():
 @app.route('/doublehttp', methods=['GET'])
 def doublehttp():
     requests.get(f'http://localhost:{flask_port}', headers=generate_traced_subspan_values())
+    return jsonify({}), 200
+
+
+@app.route('/excludefull', methods=['GET'])
+def exclude_full():
+    return jsonify({}), 200
+
+
+@app.route('/excludepartial', methods=['GET'])
+def exclude_partial():
     return jsonify({}), 200
 
 

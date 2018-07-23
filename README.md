@@ -3,6 +3,7 @@
 
 # todo tw firebreak sprint:
 - add example using decorator
+- add examples for exceptions too
 - finish readme for flask helpers
 - write tests for b3/tracing stuff
 - code grpc helpers

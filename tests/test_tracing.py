@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from stackdriver_logging.tracing import _truncate_str, g, start_span, Trace
+from stackdriver_logging.tracing import _truncate_str, thread_memory, start_span, SubSpan
 
 
 def test_truncate_str():
@@ -17,12 +17,12 @@ def test_truncate_str():
 @patch('stackdriver_logging.tracing.b3.start_span')
 def test_g_child_span_count(startspan, subspan):
     start_span({}, '', '', '')
-    assert g.child_span_count == 0
+    assert thread_memory.child_span_count == 0
 
-    with Trace() as _:
+    with SubSpan() as _:
         pass
-    assert g.child_span_count == 1
+    assert thread_memory.child_span_count == 1
 
-    with Trace() as _:
+    with SubSpan() as _:
         pass
-    assert g.child_span_count == 2
+    assert thread_memory.child_span_count == 2

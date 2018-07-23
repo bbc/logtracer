@@ -5,7 +5,7 @@ import grpc
 import time
 
 from examples.grpc_resources import grpc_demo_pb2_grpc, grpc_demo_pb2
-from stackdriver_logging.tracing import start_span, end_span
+from stackdriver_logging.tracing import start_traced_span, end_traced_span
 
 ONE_DAY_IN_SECONDS = 60 * 60 * 24
 logger = logging.getLogger('demoGRPCLogger')
@@ -18,11 +18,11 @@ def log_event(event):
 
     def wrapper(self, request, context):
         b3_values = getattr(request, 'b3_values', {})
-        start_span(b3_values, 'demoGRPC', event.__name__, f'localhost:{grpc_port}')
+        start_traced_span(b3_values, 'demoGRPC', event.__name__)
         logger.info(f'gRPC - Call {event.__name__}')
         event_response = event(self, request, context)
         logger.info(f'gRPC - Return {event.__name__}')
-        end_span()
+        end_traced_span()
         return event_response
 
     return wrapper

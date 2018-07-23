@@ -1,6 +1,13 @@
 # Stackdriver Logging
 > Adds distributed tracing information to logger output and sends traces to the Stackdriver Trace API.
 
+# todo tw firebreak sprint:
+- add example using decorator
+- finish readme for flask helpers
+- write tests for b3/tracing stuff
+- code grpc helpers
+- write readme for it
+
 ## Purpose
 
 Make it simple to generate and propagate tracing metadata between Python microservices.

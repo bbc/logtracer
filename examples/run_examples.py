@@ -9,11 +9,12 @@ from examples.flask_server import flask_port, run_flask_server
 from examples.grpc_resources.grpc_demo_pb2 import DemoMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import run_grpc_server, grpc_port
-from stackdriver_logging.jsonlog import configure_json_logging
+from stackdriver_logging.jsonlog import configure_json_logging, get_logger
 
 # logging
-configure_json_logging('bbc-connected-data')
-logger = logging.getLogger('demoLogger')
+service_name = 'demoApp'
+configure_json_logging('bbc-connected-data', service_name)
+logger = get_logger()
 logger.setLevel('DEBUG')
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('google.auth.transport.requests').setLevel(logging.WARNING)
@@ -72,4 +73,4 @@ def run_grpc_examples():
 
 if __name__ == '__main__':
     run_flask_examples()
-    run_grpc_examples()
+    # run_grpc_examples()

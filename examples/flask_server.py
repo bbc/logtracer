@@ -2,40 +2,31 @@ import logging
 
 import grpc
 import requests
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 
 from examples.grpc_resources.grpc_demo_pb2 import DemoMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import grpc_port
-from stackdriver_logging.tracing import start_span, end_span, Trace
+from stackdriver_logging.flask_helpers.callbacks import before_request, after_request, teardown_request
+from stackdriver_logging.jsonlog import get_logger
+from stackdriver_logging.tracing import generate_traced_subspan_values
 
 # flask
-app = Flask('demoFlaskApp')
+app = Flask('demoFlaskLogger')
 flask_port = 5005
 
 # logging
-logger = logging.getLogger('demoFlaskLogger')
+logger = get_logger()
 logger.setLevel('DEBUG')
+
+# functions to run before and after a request is made
+app.before_request(before_request())
+app.after_request(after_request())
+app.teardown_request(teardown_request())
 
 # for grpc request
 channel = grpc.insecure_channel(f'localhost:{grpc_port}')
 stub = DemoServiceStub(channel)
-
-
-# functions to run before and after a request is made
-def before():
-    start_span(request.headers, 'demoApp', request.path, f'http://localhost:{flask_port}')
-    logger.info(f'{request.method} - {request.url}')
-
-
-def after(response):
-    logger.info(f'{response.status} - {request.url}')
-    end_span()
-    return response
-
-
-app.before_request(before)
-app.after_request(after)
 
 
 # flask endpoints
@@ -46,19 +37,17 @@ def index():
 
 @app.route('/grpc', methods=['GET'])
 def grpc():
-    with Trace() as b3_headers:
-        message = DemoMessage(
-            b3_values=b3_headers
-        )
-        stub.DemoRPC(message)
+    message = DemoMessage(
+        b3_values=generate_traced_subspan_values()
+    )
+    stub.DemoRPC(message)
     return jsonify({}), 200
 
 
 @app.route('/doublehttp', methods=['GET'])
 def doublehttp():
-    with Trace() as b3_headers:
-        requests.get(f'http://localhost:{flask_port}', headers=b3_headers)
-    return jsonify({})
+    requests.get(f'http://localhost:{flask_port}', headers=generate_traced_subspan_values())
+    return jsonify({}), 200
 
 
 # server

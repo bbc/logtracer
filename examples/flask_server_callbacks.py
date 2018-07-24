@@ -2,7 +2,7 @@ import grpc
 import requests
 from flask import Flask, jsonify, make_response
 
-from examples.grpc_resources.grpc_demo_pb2 import DemoMessage
+from examples.grpc_resources.grpc_demo_pb2 import DemoMessage, EmptyMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import grpc_port
 from stackdriver_logging.flask_helpers.callbacks import before_request, after_request, teardown_request
@@ -40,7 +40,7 @@ def index():
 
 @app.route('/grpc', methods=['GET'])
 def grpc():
-    message = DemoMessage(
+    message = EmptyMessage(
         b3_values=generate_traced_subspan_values()
     )
     stub.DemoRPC(message)

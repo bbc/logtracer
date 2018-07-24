@@ -19,9 +19,12 @@ message DemoMessage {
     string value2 = 2;
     NestedMessage nested = 3;
     map<string,string> b3_values = 4;
+
 }
 
-message EmptyMessage {}
+message EmptyMessage {
+    map<string,string> b3_values = 1;
+}
 
 service DemoService {
     rpc DemoRPC (EmptyMessage) returns (EmptyMessage) {}

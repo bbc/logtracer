@@ -25,7 +25,10 @@ def redacted_request(request, fields):
     r = copy.deepcopy(request)
     if fields:
         for field in fields:
-            _rsetattr(r, field, "REDACTED")
+            try:
+                _rsetattr(r, field, "REDACTED")
+            except AttributeError:
+                pass
     return r
 
 
@@ -54,13 +57,16 @@ def trace_call(redacted_fields=None):
     return trace_call_decorator
 
 
-def trace_all_calls():
+def trace_all_calls(redacted_fields=None):
     """Apply a decorator to all methods of a Class, excluding `__init__`."""
 
     def decorate(cls):
         for attr in cls.__dict__:
             if callable(getattr(cls, attr)) and attr != '__init__':
-                setattr(cls, attr, trace_call(getattr(cls, attr)))
+                def wrapper(f):
+                    trace_call_decorator = trace_call(redacted_fields)
+                    return trace_call_decorator(f)
+                setattr(cls, attr, wrapper(getattr(cls, attr)))
         return cls
 
     return decorate

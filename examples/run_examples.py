@@ -4,10 +4,11 @@ from threading import Thread
 
 import grpc
 import requests
+from grpc._channel import _Rendezvous
 
 from examples.flask_server_callbacks import flask_callbacks_port, run_flask_server_callbacks
 from examples.flask_server_decorators import run_flask_server_decorators, flask_decorators_port
-from examples.grpc_resources.grpc_demo_pb2 import DemoMessage
+from examples.grpc_resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import run_grpc_server, grpc_port
 from stackdriver_logging.jsonlog import configure_json_logging, get_logger
@@ -124,18 +125,47 @@ def run_grpc_examples():
     # and log it. It then closes the span and logs it.
     br()
     print('Call to gRPC endpoint:')
-    message = DemoMessage()
+    message = EmptyMessage()
     stub.DemoRPC(message)
 
     # call to handled exception
+    br()
+    print('Call to handled exception endpoint:')
+    message = EmptyMessage()
+    try:
+        stub.DemoRPCHandledException(message)
+    except _Rendezvous as e:
+        print(e.code(), e.details())
 
     # call to unhandled exception
-
-    # call with redacted cookie
-
     br()
+    print('Call to unhandled exception endpoint:')
+    message = EmptyMessage()
+    try:
+        stub.DemoRPCUnHandledException(message)
+    except _Rendezvous as e:
+        print(e.code(), e.details())
+
+    # call with redacted values
+    br()
+    print('Call to endpoint with redacted values:')
+    message = DemoMessage(
+        value1='1',
+        value2='2',
+        nested=NestedMessage(
+            nestedvalue1='1',
+            nestedvalue2='2',
+            doublenested=DoubleNestedMessage(
+                doublenestedvalue1='1',
+                doublenestedvalue2='2'
+            )
+        )
+    )
+    stub.DemoRPCRedactedParameters(message)
+
     # Call a Flask endpoint which creates a span and passes the parameters to the RPC Demo endpoint where a subspan
     # is created with the same trace ID but a new span ID.
+    br()
     print('Call to Flask endpoint that calls gRPC endpoint:')
     requests.get(f'http://localhost:{flask_callbacks_port}/grpc')
     print('Done')

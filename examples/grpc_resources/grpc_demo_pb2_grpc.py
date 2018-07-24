@@ -16,8 +16,23 @@ class DemoServiceStub(object):
     """
     self.DemoRPC = channel.unary_unary(
         '/bramble.DemoService/DemoRPC',
+        request_serializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.SerializeToString,
+        response_deserializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.FromString,
+        )
+    self.DemoRPCHandledException = channel.unary_unary(
+        '/bramble.DemoService/DemoRPCHandledException',
+        request_serializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.SerializeToString,
+        response_deserializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.FromString,
+        )
+    self.DemoRPCUnHandledException = channel.unary_unary(
+        '/bramble.DemoService/DemoRPCUnHandledException',
+        request_serializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.SerializeToString,
+        response_deserializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.FromString,
+        )
+    self.DemoRPCRedactedParameters = channel.unary_unary(
+        '/bramble.DemoService/DemoRPCRedactedParameters',
         request_serializer=grpc__resources_dot_grpc__demo__pb2.DemoMessage.SerializeToString,
-        response_deserializer=grpc__resources_dot_grpc__demo__pb2.DemoMessage.FromString,
+        response_deserializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.FromString,
         )
 
 
@@ -32,13 +47,49 @@ class DemoServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def DemoRPCHandledException(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def DemoRPCUnHandledException(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def DemoRPCRedactedParameters(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_DemoServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
       'DemoRPC': grpc.unary_unary_rpc_method_handler(
           servicer.DemoRPC,
+          request_deserializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.FromString,
+          response_serializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.SerializeToString,
+      ),
+      'DemoRPCHandledException': grpc.unary_unary_rpc_method_handler(
+          servicer.DemoRPCHandledException,
+          request_deserializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.FromString,
+          response_serializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.SerializeToString,
+      ),
+      'DemoRPCUnHandledException': grpc.unary_unary_rpc_method_handler(
+          servicer.DemoRPCUnHandledException,
+          request_deserializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.FromString,
+          response_serializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.SerializeToString,
+      ),
+      'DemoRPCRedactedParameters': grpc.unary_unary_rpc_method_handler(
+          servicer.DemoRPCRedactedParameters,
           request_deserializer=grpc__resources_dot_grpc__demo__pb2.DemoMessage.FromString,
-          response_serializer=grpc__resources_dot_grpc__demo__pb2.DemoMessage.SerializeToString,
+          response_serializer=grpc__resources_dot_grpc__demo__pb2.EmptyMessage.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

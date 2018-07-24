@@ -2,12 +2,31 @@ syntax = "proto3";
 
 package bramble;
 
+message DoubleNestedMessage {
+    string doublenestedvalue1 = 1;
+    string doublenestedvalue2 = 2;
+
+}
+
+message NestedMessage {
+    string nestedvalue1 = 1;
+    string nestedvalue2 = 2;
+    DoubleNestedMessage doublenested = 3;
+}
 
 message DemoMessage {
+    string value1 = 1;
+    string value2 = 2;
+    NestedMessage nested = 3;
     map<string,string> b3_values = 4;
 }
 
+message EmptyMessage {}
+
 service DemoService {
-    rpc DemoRPC (DemoMessage) returns (DemoMessage) {}
+    rpc DemoRPC (EmptyMessage) returns (EmptyMessage) {}
+    rpc DemoRPCHandledException (EmptyMessage) returns (EmptyMessage) {}
+    rpc DemoRPCUnHandledException (EmptyMessage) returns (EmptyMessage) {}
+    rpc DemoRPCRedactedParameters (DemoMessage) returns (EmptyMessage) {}
 }
 

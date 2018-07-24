@@ -44,7 +44,7 @@ def trace_call(redacted_fields=None):
                 response = f(self, request, context)
             except Exception as e:
                 logger.exception(e)
-                logger.error(f"gRPC - {type(e)} - '{f.__name__}'")
+                logger.error(f"gRPC - {type(e).__name__} - '{f.__name__}'")
                 end_traced_span()
                 raise e
             logger.info(f"gRPC - Return '{f.__name__}'")

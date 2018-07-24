@@ -1,11 +1,11 @@
 import grpc
 import requests
-from flask import Flask, jsonify
+from flask import Flask, jsonify, make_response
 
 from examples.grpc_resources.grpc_demo_pb2 import DemoMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import grpc_port
-from stackdriver_logging.flask_helpers.decorators import TracedRoute
+from stackdriver_logging.flask_helpers.decorators import TracedRoute, TracedExceptionHandler
 from stackdriver_logging.jsonlog import get_logger
 from stackdriver_logging.tracing import generate_traced_subspan_values
 
@@ -49,6 +49,32 @@ def doublehttp():
 @app.route('/exclude', methods=['GET'])
 def exclude():
     return jsonify({}), 200
+
+
+class HandledException(Exception):
+    pass
+
+
+class UnhandledException(Exception):
+    pass
+
+
+@app.route('/handledexception', methods=['GET'])
+@TracedRoute()
+def handled_exception():
+    raise HandledException('This is a handled Exception!')
+
+
+@app.route('/unhandledexception', methods=['GET'])
+@TracedRoute()
+def unhandled_exception():
+    raise UnhandledException('This is an unhandled Exception!')
+
+
+@app.errorhandler(HandledException)
+@TracedExceptionHandler()
+def exception_handler(e):
+    return make_response(jsonify(str(e)), 500)
 
 
 # server

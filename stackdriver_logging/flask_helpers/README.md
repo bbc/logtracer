@@ -30,3 +30,5 @@ Example usage:
     app.teardown_request(teardown_request('SERVICE_NAME'))
 
 ```
+
+explain why span closed in teardown (so exceptions are caught too)

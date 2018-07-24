@@ -2,7 +2,6 @@
 > Adds distributed tracing information to logger output and sends traces to the Stackdriver Trace API.
 
 # todo tw firebreak sprint:
-- add example using decorator
 - add examples for exceptions too
 - finish readme for flask helpers
 - write tests for b3/tracing stuff

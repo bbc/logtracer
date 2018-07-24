@@ -42,7 +42,7 @@ def end_traced_span():
         'same_process_as_parent_span': BoolValue(value=False),
         'child_span_count': Int32Value(value=thread_memory.child_span_count)
     }
-    post_to_api_job = Thread(target=_send_span, args=(span_info,))
+    post_to_api_job = Thread(target=_post_span, args=(span_info,))
     post_to_api_job.start()
     b3.end_span()
     thread_memory.span_open = False
@@ -55,8 +55,8 @@ def generate_traced_subspan_values():
     return generate_subspan_values()
 
 
-def _send_span(span_info):
-    """Send span to Trace API."""
+def _post_span(span_info):
+    """Post span to Trace API."""
     trace_client.create_span(**span_info)
 
 

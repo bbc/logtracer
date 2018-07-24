@@ -28,7 +28,12 @@ def after_request(excluded_routes=None, excluded_routes_partial=None):
 
     def execute_after_request(response):
         if not _is_path_excluded(request.path, excluded_routes, excluded_routes_partial):
-            get_logger().info(f'{response.status} - {request.url}')
+            logger = get_logger()
+            status = str(response.status_code)
+            if status[0] == '5':
+                logger.error(f'{response.status} - {request.url}')
+            else:
+                logger.info(f'{response.status} - {request.url}')
         return response
 
     return execute_after_request
@@ -42,8 +47,6 @@ def teardown_request(excluded_routes=None, excluded_routes_partial=None):
     """
 
     def execute_on_teardown(exception):
-        if exception:
-            get_logger().exception(exception)
         if not _is_path_excluded(request.path, excluded_routes, excluded_routes_partial):
             end_traced_span()
 

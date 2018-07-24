@@ -27,9 +27,14 @@ channel = grpc.insecure_channel(f'localhost:{grpc_port}')
 stub = DemoServiceStub(channel)
 
 
+def br():
+    print('\n\n')
+
+
 # These demos illustrate simple calls to a Flask and gRPC server as well as a call from a Flask server to a gRPC
 # server.
 def run_flask_callbacks_examples():
+    br()
     server_thread = Thread(target=run_flask_server_callbacks)
     server_thread.start()
 
@@ -38,76 +43,99 @@ def run_flask_callbacks_examples():
     # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
     # then runs `after_request` logs the response code. When the request object is done with, the teardown callack
     # closes the span. Every time `end_span` is called, logs are sent to the Stackdriver Trace API.
-    print('\n\n')
-    logger.info('Single call to Flask root endpoint:')
-    requests.get(f'http://localhost:{flask_callbacks_port}/')
-    logger.info('Done')
+    br()
+    print('FLASK CALLBACKS EXAMPLE')
 
-    print('\n\n')
+    print('Single call to Flask root endpoint:')
+    requests.get(f'http://localhost:{flask_callbacks_port}/')
+    print('Done')
+
+    br()
     # Create a span as above, then pass those tracing parameters to a call to the root endpoint. This will create a new
     # subspan with the same trace ID as the initial request and a new span ID will be generated. Confirm this in the
     # log outputs.
-    logger.info('Double call to Flask endpoints:')
+    print('Double call to Flask endpoints:')
     requests.get(f'http://localhost:{flask_callbacks_port}/doublehttp')
-    logger.info('Done')
+    print('Done')
 
-    print('\n\n')
+    br()
     # Do as the first example but call endpoints which are 'excluded', these should not appear in the logs.
-    logger.info('Two calls to excluded endpoints:')
+    print('Two calls to excluded endpoints:')
     requests.get(f'http://localhost:{flask_callbacks_port}/excludefull')
     requests.get(f'http://localhost:{flask_callbacks_port}/excludepartial')
-    logger.info('Done')
+    print('Done')
+
+    br()
+    # Do as the first example but call endpoints which are 'excluded', these should not appear in the logs.
+    print('Call to handled exception:')
+    requests.get(f'http://localhost:{flask_callbacks_port}/handledexception')
+    print('Call to unhandled exception:')
+    requests.get(f'http://localhost:{flask_callbacks_port}/unhandledexception')
+    print('Done')
 
 
 def run_flask_decorators_examples():
+    br()
     server_thread = Thread(target=run_flask_server_decorators)
     server_thread.start()
 
-    time.sleep(1)
+    time.sleep(2)
     # Call the root endpoint of the Flask server. On receiving the request, the server will run `before_request` which
     # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
     # then runs `after_request` logs the response code. When the request object is done with, the teardown callack
     # closes the span. Every time `end_span` is called, logs are sent to the Stackdriver Trace API.
-    print('\n\n')
-    logger.info('Single call to Flask root endpoint:')
+    br()
+    print('FLASK DECORATORS EXAMPLE')
+    print('Single call to Flask root endpoint:')
     requests.get(f'http://localhost:{flask_decorators_port}/')
-    logger.info('Done')
+    print('Done')
 
-    print('\n\n')
+    br()
     # Create a span as above, then pass those tracing parameters to a call to the root endpoint. This will create a new
     # subspan with the same trace ID as the initial request and a new span ID will be generated. Confirm this in the
     # log outputs.
-    logger.info('Double call to Flask endpoints:')
+    print('Double call to Flask endpoints:')
     requests.get(f'http://localhost:{flask_decorators_port}/doublehttp')
-    logger.info('Done')
+    print('Done')
 
-    print('\n\n')
+    br()
     # Do as the first example but call endpoints which are 'excluded', these should not appear in the logs.
-    logger.info('Call to excluded endpoint:')
+    print('Call to excluded endpoint:')
     requests.get(f'http://localhost:{flask_decorators_port}/exclude')
-    logger.info('Done')
+    print('Done')
+
+    br()
+    # Do as the first example but call endpoints which are 'excluded', these should not appear in the logs.
+    print('Call to handled exception:')
+    requests.get(f'http://localhost:{flask_decorators_port}/handledexception')
+    print('Call to unhandled exception:')
+    requests.get(f'http://localhost:{flask_decorators_port}/unhandledexception')
+    print('Done')
 
 
 def run_grpc_examples():
+    br()
     server_thread = Thread(target=run_grpc_server)
     server_thread.start()
+    print('GRPC EXAMPLE')
 
-    time.sleep(1)
+    time.sleep(2)
     # Call the Demo rpc of the gRPC server. On receiving the request, the `log_event` decorator will will start a span
     # and log it. It then closes the span and logs it.
-    print('\n\n')
-    logger.info('Call to gRPC endpoint:')
+    br()
+    print('Call to gRPC endpoint:')
     message = DemoMessage()
     stub.DemoRPC(message)
 
-    print('\n\n')
+    br()
     # Call a Flask endpoint which creates a span and passes the parameters to the RPC Demo endpoint where a subspan
     # is created with the same trace ID but a new span ID.
-    logger.info('Call to Flask endpoint that calls gRPC endpoint:')
+    print('Call to Flask endpoint that calls gRPC endpoint:')
     requests.get(f'http://localhost:{flask_callbacks_port}/grpc')
-    logger.info('Done')
+    print('Done')
 
 
 if __name__ == '__main__':
     run_flask_decorators_examples()
+    run_flask_callbacks_examples()
     # run_grpc_examples()

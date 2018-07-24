@@ -6,7 +6,7 @@ from stackdriver_logging.jsonlog import get_logger
 from stackdriver_logging.tracing import start_traced_span, end_traced_span
 
 
-class TracedRoute:
+class TraceRoute:
     """
     Decorator to handle starting a span, logging it, closing it, logging it, and logging exceptions.
 
@@ -28,7 +28,7 @@ class TracedRoute:
         return log_span
 
 
-class TracedExceptionHandler:
+class TraceExceptionHandler:
     def __call__(self, f):
         @functools.wraps(f)
         def log_error_response(e):

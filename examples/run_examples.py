@@ -127,6 +127,12 @@ def run_grpc_examples():
     message = DemoMessage()
     stub.DemoRPC(message)
 
+    # call to handled exception
+
+    # call to unhandled exception
+
+    # call with redacted cookie
+
     br()
     # Call a Flask endpoint which creates a span and passes the parameters to the RPC Demo endpoint where a subspan
     # is created with the same trace ID but a new span ID.
@@ -136,6 +142,6 @@ def run_grpc_examples():
 
 
 if __name__ == '__main__':
-    run_flask_decorators_examples()
+    # run_flask_decorators_examples()
     run_flask_callbacks_examples()
-    # run_grpc_examples()
+    run_grpc_examples()

@@ -2,14 +2,14 @@ import re
 
 from pytest import fixture
 
-import stackdriver_logging.b3
+import stackdriver_logging._b3
 
 
 @fixture
 def b3():
-    yield stackdriver_logging.b3
+    yield stackdriver_logging._b3
     b3.DEBUG = False
-    stackdriver_logging.b3._end_subspan()
+    stackdriver_logging._b3._end_subspan()
 
 
 def test_should_generate_root_span_ids(b3):

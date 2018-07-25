@@ -12,12 +12,11 @@ from examples.grpc_resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, Nes
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import run_grpc_server, grpc_port
 from stackdriver_logging.jsonlog import configure_json_logging, get_logger
-
 # logging
+from stackdriver_logging.tracing import configure_tracing
+
 service_name = 'demoApp'
-configure_json_logging('bbc-connected-data', service_name)
-logger = get_logger()
-logger.setLevel('DEBUG')
+project_name = 'bbc-connected-data'
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('google.auth.transport.requests').setLevel(logging.WARNING)
 logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
@@ -32,14 +31,21 @@ def br():
     print('\n\n')
 
 
+def start_servers():
+    flask_callbacks_server_thread = Thread(target=run_flask_server_callbacks)
+    flask_callbacks_server_thread.start()
+    flask_server_decorators_server_thread = Thread(target=run_flask_server_decorators)
+    flask_server_decorators_server_thread.start()
+    grpc_server_thread = Thread(target=run_grpc_server)
+    grpc_server_thread.start()
+    time.sleep(2)
+
+
 # These demos illustrate simple calls to a Flask and gRPC server as well as a call from a Flask server to a gRPC
 # server.
 def run_flask_callbacks_examples():
-    br()
-    server_thread = Thread(target=run_flask_server_callbacks)
-    server_thread.start()
-
     time.sleep(1)
+    br()
     # Call the root endpoint of the Flask server. On receiving the request, the server will run `before_request` which
     # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
     # then runs `after_request` logs the response code. When the request object is done with, the teardown callack
@@ -76,11 +82,8 @@ def run_flask_callbacks_examples():
 
 
 def run_flask_decorators_examples():
+    time.sleep(1)
     br()
-    server_thread = Thread(target=run_flask_server_decorators)
-    server_thread.start()
-
-    time.sleep(2)
     # Call the root endpoint of the Flask server. On receiving the request, the server will run `before_request` which
     # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
     # then runs `after_request` logs the response code. When the request object is done with, the teardown callack
@@ -115,15 +118,12 @@ def run_flask_decorators_examples():
 
 
 def run_grpc_examples():
+    time.sleep(1)
     br()
-    server_thread = Thread(target=run_grpc_server)
-    server_thread.start()
-    print('GRPC EXAMPLE')
-
-    time.sleep(2)
     # Call the Demo rpc of the gRPC server. On receiving the request, the `log_event` decorator will will start a span
     # and log it. It then closes the span and logs it.
     br()
+    print('GRPC EXAMPLE')
     print('Call to gRPC endpoint:')
     message = EmptyMessage()
     stub.DemoRPC(message)
@@ -172,6 +172,24 @@ def run_grpc_examples():
 
 
 if __name__ == '__main__':
-    # run_flask_decorators_examples()
+    print('****** Local formatted examples with posted traces ******')
+    configure_json_logging(project_name, service_name, 'local')
+    configure_tracing(post_spans_to_api=False)
+    start_servers()
+
+    logger = get_logger()
+    logger.setLevel('DEBUG')
+
+    run_flask_decorators_examples()
+    run_flask_callbacks_examples()
+    run_grpc_examples()
+
+    print('****** GCP formatted examples with posted traces ******')
+    configure_json_logging(project_name, service_name, 'stackdriver')
+    configure_tracing(post_spans_to_api=True)
+    logger = get_logger()
+    logger.setLevel('DEBUG')
+
+    run_flask_decorators_examples()
     run_flask_callbacks_examples()
     run_grpc_examples()

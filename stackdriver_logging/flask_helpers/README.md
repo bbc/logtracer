@@ -1,8 +1,22 @@
-utilities designed to make integration with a flask microservice easier
+# Flask Helpers
 
-requires flask to be installed - likely already installed on module workig on
+These are utilities designed to make integration with a Flask app simpler. Flask isn't included as a requirement of this
+package but it should be in the app you are using this for.
 
-two ways to start and end spans: callbacks and decorators
+## Implementation Guide
+Here the steps on how to implement this library in a Flask app will be detailed.
+### 1) Credentials
+local/kube/other
+disabled by default
+
+### 2) Configure 
+configure_json_logging
+
+There are two ways you can implement tracing in your Flask app using this package:
+## 1) Using Flask Callbacks
+Flask has [callbacks](http://flask.pocoo.org/docs/1.0/api/#flask.Flask.after_request) that allow you to run code before and after each request. 
+
+These callbacks can be used to start and end spans.
 
 when to use either?
 use callbacks when you want to log most of the endpoints

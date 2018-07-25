@@ -1,6 +1,50 @@
 # Stackdriver Logging
 > Adds distributed tracing information to logger output and sends traces to the Stackdriver Trace API.
 
+
+## Usage
+### Pre Setup
+Install: `pip install git+https://github.com/bbc/python-gcp-trace-logging@[BRANCH or COMMIT_HASH or TAG_NAME]`.
+It is good practise to pin the version or your code may break if this package is updated.
+
+### Logging
+Before writing any logs, the `configure_json_logging` command must be ran.
+There are two formatters availale for usage with logging, `local` and `stackdriver`, descried further in the [#purpose](Purpose) section.
+It is advisable to set this using an environmental variable.
+```python
+from stackdriver_logging.jsonlog import configure_json_logging, get_logger
+import os
+
+logging_format = os.getenv('LOGGING_FORMAT', 'local')
+configure_json_logging('project name', 'service name', logging_format)
+logger = get_logger()
+logger.setLevel('INFO')
+```
+
+If you are using the `stackdriver` format locally (unadvised unless you are specifically testing functionality of the Trace API), 
+then you *must* set up authentication for the [google-cloud-trace](https://pypi.org/project/google-cloud-trace/) client using the following command: 
+```
+gcloud auth application-default login
+```
+If you are using it in a Kubernetes container, then it should automatically pick up the GCP credentials. 
+
+### Tracing
+By default tracing functionality is disabled - tracing IDs will not show in the logs and nothing will be posted to the Stackdriver Trace API.
+Enable it as follows (using an environmental variable), making sure to do this before writing any logs. It is advised to leave it disabled when working locally.
+```python
+from stackdriver_logging.tracing import configure_tracing
+import os 
+
+enable_trace_posting = os.getenv('ENABLE_TRACE_POSTING', 'false') == 'true'
+configure_tracing(post_spans_to_api=enable_trace_posting)
+```
+Authentication for this is managed in the same way as logging above.
+However, this is not enough to configure tracing - tracing IDs will still not show in logs. To enable tracing functionality, 
+requests must be inside a span, follow one of the guides to implement this:
+- [Implementing Tracing in a Flask App](stackdriver_logging/flask_helpers)
+- [Implementing Tracing in a gRPC App](stackdriver_logging/grpc_helpers)
+
+
 # todo tw firebreak sprint:
 - finish readme for flask helpers
 - update this readme
@@ -11,121 +55,51 @@
 
 ## Purpose
 
-Make it simple to generate and propagate tracing metadata between Python microservices.
-The package has three core functions:
-1. Add a handler to the `root` logger that writes log entries into `stdout` in JSON, which 
-[Stackdriver Logs](https://cloud.google.com/logging/) can parse.
+Make it simple to generate and propagate tracing metadata between Python microservices and post them to a tracing API.
+Package functionality can be separated into two areas, logging and tracing.
 
-2. Decorate each log entry with tracing metadata: `span id` and `trace id`.
+### Logging
 
-3. Send tracing metadata to the [Stackdriver Trace API](https://cloud.google.com/trace/). 
+Using the logging part of this package allows logs to be written in `JSON` format. The logging handler added by this package 
+writes the logs in JSON using [python-json-logger](https://github.com/madzak/python-json-logger). Currently two formatters are implemented,
+`local` and `stackdriver`. Examples of each:
 
-## Motivation
-This setup is useful when working with containers in Google Kubernetes Engine with logging enabled 
+####`local`
+```
+{"severity": "INFO", "time": "2018-07-25T14:06:05.499727", "sourceLocation": {"file": "/Users/windet01/Files/Code/stackdriver_logging/stackdriver_logging/flask_helpers/decorators.py", "line": 21, "function": "wrapper"}, "message": "demoApp - GET - http://localhost:5010/", "traceId": "854a7fbec6f0c912f6745b514a2ae6ee", "spanID": "231d2786b123764e"}
+```
+This formatter simply prints the log information to stdout in JSON, with some added fields.
+
+####`stackdriver`
+```
+{"severity": "INFO", "time": "2018-07-25T14:06:09.949433", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/stackdriver_logging/stackdriver_logging/flask_helpers/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/89f78ff01d84e130a43f2461dddb996f", "logging.googleapis.com/spanId": "d259b23ab3d81bdd"}
+```
+This format prints the information to stdout in JSON, with keys named in a way that [Stackdriver Logs](https://cloud.google.com/logging/) is able to parse them.
+The `stackdriver` formatter is useful when working with containers in Google Kubernetes Engine with logging enabled 
 [(more info)](https://cloud.google.com/kubernetes-engine/docs/how-to/logging). 
 
 With logging enabled in the Kubernetes cluster, anything written to `stdout`/`stderr` by a container is parsed by a 
 [fluentd daemon](https://github.com/GoogleCloudPlatform/fluent-plugin-google-cloud) and sent to the Stackdriver Logs API. 
 If the log entries are written in JSON, then the daemon can process [certain fields](https://cloud.google.com/logging/docs/agent/configuration#special_fields_in_structured_payloads) 
-in the entry, any fields not recognised are thrown into a `jsonPayload` field. <sup>*</sup> The logging handler added by this package 
-writes the logs in JSON using [python-json-logger](https://github.com/madzak/python-json-logger), and adds extra metadata which Stackdriver Logs expects.
+in the entry, any fields not recognised are thrown into a `jsonPayload` field. <sup>*</sup> 
 
 
-Two important pieces of metadata added are the `span id` and the `trace id` using code from [B3-Propagation](https://github.com/davidcarboni/B3-Propagation). These parameters make it possible to trace 
-requests across different services, this approach is described in more detail in the 
+### Tracing
+Two important pieces of metadata dealt with by this module are the `span id` and the `trace id` (using code adapted from [B3-Propagation](https://github.com/davidcarboni/B3-Propagation)). 
+These parameters make it possible to trace requests across different services, an approach described in more detail in the 
 [openzipkin/b3-propagation](https://github.com/openzipkin/b3-propagation) repository. 
 
-
-The Stackdriver Trace API exists separate to the Logging API, meaning that unfortunately the Trace API cannot pull the trace IDs 
+Currently, these IDs are included in the JSON logs if present and omitted if not. 
+The span details are also posted to the [Stackdriver Trace API](https://cloud.google.com/trace/), this functionality is *disabled* by default. 
+The Trace API exists separate to the Logging API, meaning that unfortunately the Trace API cannot pull the trace IDs 
 from the logs. Instead, these have to be posted separately. This package does this using Google's [google-cloud-trace](https://pypi.org/project/google-cloud-trace/)
 Python client. Calls to this can be quite slow, so they are made in a new thread to ensure no blocking. Traces can be viewed in the
-Trace API and they are linked to the logs by tracing metadata as shown below.
+Trace API and they are linked to the logs by tracing metadata as shown in the image below.
 
 ![example trace](examples/example_trace.png)
 
 
-## Usage
-### Initial setup
-- Install `pip install git+https://github.com/bbc/python-gcp-trace-logging@BRANCH/COMMIT_HASH/TAG_NAME`.
-- You must provide authentication for the client to be able to access the Stackdriver Trace API. This is achievable on your __local__ machine 
-by running `gcloud auth application-default login`. You will likely get a warning when running a service saying to use a 
-`service account` instead of `end user credentials` - this is fine to ignore as long as your application is not firing off 
-excessive amounts of logs. When running in __GKE__, these details should be picked up __automatically__.
-### JSON Logger
-To use the Stackdriver-compliant JSON logs, run the `configure_json_logging` function before using any loggers.
-This will add a new handler to the root logger which writes logs in JSON. This only needs to be run once in your application
-and must be called with the Google Cloud Platform project name.
-```
-import logging 
-from gcptracelogging.jsonlog import configure_json_logging`
 
-configure_json_logging('gcp-project-name')
-logger = logging.getLogger('app')
-```
-
-### Stackdriver Trace
-To create a span and post the parameters to the Stackdriver Trace API use the `start_span` and `end_span` functions.
-
-```python
-from gcptracelogging.tracing import start_span, end_span, TracedSubSpan`
-
-# http
-start_span(request.headers, 'http', request.path, 'http://localhost:5000')
-do_stuff()
-end_span()
-# grpc
-start_span(request.b3_values, 'grpc', 'demoFunc', 'http://localhost:50055')
-do_stuff()
-end_span()
-```
-These should be run before and after a request is handled.
-The logger will add the span ID and the trace ID to log entries, always write log entries inside a span or else they wont 
-be linked to a span. Passing in the headers/values from an upstream request allows any tracing IDs from an upstream call to be picked up and used. 
-In the example, decorators are used to handle span creation.
-
-When making a downstream call, a subspan should be created using the `TracedSubSpan()` context manager and the tracing 
-parameters should be sent with the call. 
-```python
-# http
-with TracedSubSpan() as b3_headers:
-    requests.get('http://example.com', headers=b3_headers)
-
-# grpc
-with TracedSubSpan() as b3_headers:
-    message = DemoMessage(
-        b3_values=b3_headers,
-        ...
-    )
-    stub.DemoRPC(message)
-```
-
-### Example
-See example usage with a Flask app and a gRPC app in the `examples/` directory. Output from running:
-```
-{"severity": "INFO", "time": "2018-07-13T11:42:23.351930", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 36, "function": "run_flask_examples"}, "message": "demoLogger - Single call to Flask root endpoint:"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.391907", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/e1db00af516331bca0de4164d58b1e5a", "logging.googleapis.com/spanId": "eeb175f1c9217011", "logging.googleapis.com/sourceLocation": {"file": "flask_server.py", "line": 29, "function": "before"}, "message": "demoFlaskLogger - GET - http://localhost:5005/"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.393741", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/e1db00af516331bca0de4164d58b1e5a", "logging.googleapis.com/spanId": "eeb175f1c9217011", "logging.googleapis.com/sourceLocation": {"file": "flask_server.py", "line": 33, "function": "after"}, "message": "demoFlaskLogger - 200 OK - http://localhost:5005/"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.403557", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 38, "function": "run_flask_examples"}, "message": "demoLogger - Done"}
-
-{"severity": "INFO", "time": "2018-07-13T11:42:23.404075", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 41, "function": "run_flask_examples"}, "message": "demoLogger - Double call to Flask endpoints:"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.419749", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/6f9b00dc34a5184c24dc2de3735760c3", "logging.googleapis.com/spanId": "8ab9f588d6bd3cc1", "logging.googleapis.com/sourceLocation": {"file": "flask_server.py", "line": 29, "function": "before"}, "message": "demoFlaskLogger - GET - http://localhost:5005/doublehttp"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.450904", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/6f9b00dc34a5184c24dc2de3735760c3", "logging.googleapis.com/spanId": "f20682c50cd39631", "logging.googleapis.com/sourceLocation": {"file": "flask_server.py", "line": 29, "function": "before"}, "message": "demoFlaskLogger - GET - http://localhost:5005/"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.452522", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/6f9b00dc34a5184c24dc2de3735760c3", "logging.googleapis.com/spanId": "f20682c50cd39631", "logging.googleapis.com/sourceLocation": {"file": "flask_server.py", "line": 33, "function": "after"}, "message": "demoFlaskLogger - 200 OK - http://localhost:5005/"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.462686", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/6f9b00dc34a5184c24dc2de3735760c3", "logging.googleapis.com/spanId": "8ab9f588d6bd3cc1", "logging.googleapis.com/sourceLocation": {"file": "flask_server.py", "line": 33, "function": "after"}, "message": "demoFlaskLogger - 200 OK - http://localhost:5005/doublehttp"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.476191", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 43, "function": "run_flask_examples"}, "message": "demoLogger - Done"}
-{"severity": "INFO", "time": "2018-07-13T11:42:23.536611", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "grpc_server.py", "line": 40, "function": "create_server"}, "message": "demoGRPCLogger - Starting gRPC server on http://localhost:50055."}
-
-{"severity": "INFO", "time": "2018-07-13T11:42:24.489285", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 52, "function": "run_grpc_examples"}, "message": "demoLogger - Call to gRPC endpoint:"}
-{"severity": "INFO", "time": "2018-07-13T11:42:24.495645", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/ba5263941155313b5514007959c7459a", "logging.googleapis.com/spanId": "d8f1a0354c67ba92", "logging.googleapis.com/sourceLocation": {"file": "grpc_server.py", "line": 20, "function": "wrapper"}, "message": "demoGRPCLogger - gRPC - Call DemoRPC"}
-{"severity": "INFO", "time": "2018-07-13T11:42:24.496377", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/ba5263941155313b5514007959c7459a", "logging.googleapis.com/spanId": "d8f1a0354c67ba92", "logging.googleapis.com/sourceLocation": {"file": "grpc_server.py", "line": 22, "function": "wrapper"}, "message": "demoGRPCLogger - gRPC - Return DemoRPC"}
-
-{"severity": "INFO", "time": "2018-07-13T11:42:24.508794", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 57, "function": "run_grpc_examples"}, "message": "demoLogger - Call to Flask endpoint that calls gRPC endpoint:"}
-{"severity": "INFO", "time": "2018-07-13T11:42:24.521839", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/ce7eb34172a2c95ce6f881d899da5b0c", "logging.googleapis.com/spanId": "d7ce930b52ee85af", "logging.googleapis.com/sourceLocation": {"file": "flask_server.py", "line": 29, "function": "before"}, "message": "demoFlaskLogger - GET - http://localhost:5005/grpc"}
-{"severity": "INFO", "time": "2018-07-13T11:42:24.527182", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/ce7eb34172a2c95ce6f881d899da5b0c", "logging.googleapis.com/spanId": "e38e715fe74fdfd2", "logging.googleapis.com/sourceLocation": {"file": "grpc_server.py", "line": 20, "function": "wrapper"}, "message": "demoGRPCLogger - gRPC - Call DemoRPC"}
-{"severity": "INFO", "time": "2018-07-13T11:42:24.527777", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/ce7eb34172a2c95ce6f881d899da5b0c", "logging.googleapis.com/spanId": "e38e715fe74fdfd2", "logging.googleapis.com/sourceLocation": {"file": "grpc_server.py", "line": 22, "function": "wrapper"}, "message": "demoGRPCLogger - gRPC - Return DemoRPC"}
-{"severity": "INFO", "time": "2018-07-13T11:42:24.539340", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/ce7eb34172a2c95ce6f881d899da5b0c", "logging.googleapis.com/spanId": "d7ce930b52ee85af", "logging.googleapis.com/sourceLocation": {"file": "flask_server.py", "line": 33, "function": "after"}, "message": "demoFlaskLogger - 200 OK - http://localhost:5005/grpc"}
-{"severity": "INFO", "time": "2018-07-13T11:42:24.550120", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/None", "logging.googleapis.com/spanId": null, "logging.googleapis.com/sourceLocation": {"file": "run_examples.py", "line": 59, "function": "run_grpc_examples"}, "message": "demoLogger - Done"}
-```
 
 
 ## Notes

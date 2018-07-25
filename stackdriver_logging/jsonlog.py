@@ -33,7 +33,7 @@ class StackdriverJsonFormatter(jsonlogger.JsonFormatter):
             'severity': LOG_SEVERITIES[record.levelname],
             'time': datetime.fromtimestamp(record.created),
             'logging.googleapis.com/sourceLocation': {
-                'file': record.filename,
+                'file': record.pathname,
                 'line': record.lineno,
                 'function': record.funcName
             },
@@ -67,7 +67,7 @@ class LocalJsonFormatter(jsonlogger.JsonFormatter):
             'severity': LOG_SEVERITIES[record.levelname],
             'time': datetime.fromtimestamp(record.created),
             'sourceLocation': {
-                'file': record.filename,
+                'file': record.pathname,
                 'line': record.lineno,
                 'function': record.funcName
             },
@@ -84,26 +84,26 @@ class LocalJsonFormatter(jsonlogger.JsonFormatter):
         log_record.pop('exc_info', None)
 
 
-LOGGING_PLATFORMS = {
+LOGGING_FORMATS = {
     'stackdriver': StackdriverJsonFormatter,
     'local': LocalJsonFormatter
 }
 
 
-def configure_json_logging(project_name, service_name, logging_platform):
+def configure_json_logging(project_name, service_name, logging_format):
     """
     Set globals and create a log record handler with a custom JSON formatter, then add it to the root logger.
 
     Arguments:
         project_name (str): name of your GCP project
         service_name (str): name of your app
-        logging_platform (str): name of platform (for log formatting)
+        logging_format (str): name of platform (for log formatting)
     """
     _global_vars.gcp_project_name = project_name
     _global_vars.service_name = service_name
 
     handler = logging.StreamHandler(sys.stdout)
-    formatter = LOGGING_PLATFORMS[logging_platform]
+    formatter = LOGGING_FORMATS[logging_format]
     handler.setFormatter(formatter())
 
     root_logger = logging.getLogger()

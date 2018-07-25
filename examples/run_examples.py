@@ -46,9 +46,9 @@ def start_servers():
 def run_flask_callbacks_examples():
     time.sleep(1)
     br()
-    # Call the root endpoint of the Flask server. On receiving the request, the server will run `before_request` which
+    # Call the root endpoint of the Flask server. On receiving the request, the server will run `start_span_and_log_request_before` which
     # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
-    # then runs `after_request` logs the response code. When the request object is done with, the teardown callack
+    # then runs `log_response_after` logs the response code. When the request object is done with, the teardown callack
     # closes the span. Every time `end_span` is called, logs are sent to the Stackdriver Trace API.
     br()
     print('FLASK CALLBACKS EXAMPLE')
@@ -84,9 +84,9 @@ def run_flask_callbacks_examples():
 def run_flask_decorators_examples():
     time.sleep(1)
     br()
-    # Call the root endpoint of the Flask server. On receiving the request, the server will run `before_request` which
+    # Call the root endpoint of the Flask server. On receiving the request, the server will run `start_span_and_log_request_before` which
     # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
-    # then runs `after_request` logs the response code. When the request object is done with, the teardown callack
+    # then runs `log_response_after` logs the response code. When the request object is done with, the teardown callack
     # closes the span. Every time `end_span` is called, logs are sent to the Stackdriver Trace API.
     br()
     print('FLASK DECORATORS EXAMPLE')

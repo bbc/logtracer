@@ -7,7 +7,7 @@ from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import grpc_port
 from stackdriver_logging.flask_helpers.decorators import trace_and_log_route, trace_and_log_exception
 from stackdriver_logging.jsonlog import get_logger
-from stackdriver_logging.tracing import generate_traced_subspan_values
+from stackdriver_logging.tracing import generate_new_traced_subspan_values
 
 # flask
 app = Flask('demoFlaskLoggerDecorators')
@@ -33,7 +33,7 @@ def index():
 @trace_and_log_route
 def grpc():
     message = DemoMessage(
-        b3_values=generate_traced_subspan_values()
+        b3_values=generate_new_traced_subspan_values()
     )
     stub.DemoRPC(message)
     return jsonify({}), 200
@@ -42,7 +42,7 @@ def grpc():
 @app.route('/doublehttp', methods=['GET'])
 @trace_and_log_route
 def doublehttp():
-    requests.get(f'http://localhost:{flask_decorators_port}', headers=generate_traced_subspan_values())
+    requests.get(f'http://localhost:{flask_decorators_port}', headers=generate_new_traced_subspan_values())
     return jsonify({}), 200
 
 

@@ -65,11 +65,11 @@ def end_traced_span():
     del thread_memory.span
 
 
-def generate_traced_subspan_values():
+def generate_new_traced_subspan_values():
     """
     For use in a one-off downstream call. Use this to generate the values to pass to a downstream service.
     """
-    if not hasattr(thread_memory,'span'):
+    if not hasattr(thread_memory, 'span'):
         raise TraceException('Span must be started using `start_span` before creating a subspan.')
     thread_memory.span["child_span_count"] += 1
     return generate_new_subspan_values()

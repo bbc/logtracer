@@ -4,11 +4,11 @@ from stackdriver_logging.jsonlog import get_logger
 from stackdriver_logging.tracing import start_traced_span, end_traced_span
 
 
-def before_request(excluded_routes=None, excluded_routes_partial=None):
+def start_span_and_log_request_before(excluded_routes=None, excluded_routes_partial=None):
     """
     Start a span and log the incoming request.
 
-    For use with flask `before_request`, see readme for example usage.
+    For use with flask `start_span_and_log_request_before`, see readme for example usage.
     """
 
     def execute_before_request():
@@ -19,11 +19,11 @@ def before_request(excluded_routes=None, excluded_routes_partial=None):
     return execute_before_request
 
 
-def after_request(excluded_routes=None, excluded_routes_partial=None):
+def log_response_after(excluded_routes=None, excluded_routes_partial=None):
     """
     Log the response status.
 
-    For use with flask `after_request`, see readme for example usage.
+    For use with flask `log_response_after`, see readme for example usage.
     """
 
     def execute_after_request(response):
@@ -39,11 +39,11 @@ def after_request(excluded_routes=None, excluded_routes_partial=None):
     return execute_after_request
 
 
-def teardown_request(excluded_routes=None, excluded_routes_partial=None):
+def close_span_on_teardown(excluded_routes=None, excluded_routes_partial=None):
     """
     Close the span when the request is torn down (finished). Will log an exception if one caught.
 
-    For use with flask `teardown_request`, see readme for example usage.
+    For use with flask `close_span_on_teardown`, see readme for example usage.
     """
 
     def execute_on_teardown(exception):

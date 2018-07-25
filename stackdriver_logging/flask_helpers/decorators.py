@@ -6,7 +6,7 @@ from stackdriver_logging.jsonlog import get_logger
 from stackdriver_logging.tracing import start_traced_span, end_traced_span
 
 
-class TraceRoute:
+def trace_and_log_route(f):
     """
     Decorator to handle starting a span, logging it, closing it, logging it, and logging exceptions.
 
@@ -14,43 +14,40 @@ class TraceRoute:
     can deal with it.
     """
 
-    def __call__(self, f, *args, **kwargs):
-        @functools.wraps(f)
-        def log_span(*args, **kwargs):
-            logger = get_logger()
-            start_traced_span(request.headers, request.path)
-            logger.info(f'{request.method} - {request.url}')
-            response, status_number = f(*args, **kwargs)
-            logger.info(f'{response.status} - {request.url}')
-            end_traced_span()
-            return response, status_number
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        logger = get_logger()
+        start_traced_span(request.headers, request.path)
+        logger.info(f'{request.method} - {request.url}')
+        response, status_number = f(*args, **kwargs)
+        logger.info(f'{response.status} - {request.url}')
+        end_traced_span()
+        return response, status_number
 
-        return log_span
-
-
-class TraceExceptionHandler:
-    def __call__(self, f):
-        @functools.wraps(f)
-        def log_error_response(e):
-            logger = get_logger()
-            response = f(e)
-            logger.exception(e)
-            logger.error(f'{response.status} - {request.url}')
-            end_traced_span()
-            return response
-
-        return log_error_response
+    return wrapper
 
 
-class LogException:
+def trace_and_log_exception(f):
+    @functools.wraps(f)
+    def wrapper(e):
+        logger = get_logger()
+        response = f(e)
+        logger.exception(e)
+        logger.error(f'{response.status} - {request.url}')
+        end_traced_span()
+        return response
+
+    return wrapper
+
+
+def log_exception(f):
     """For usage with callbacks - cant access exception object in callbacks (if they are handled) so have to add this
     decorator to the error handlers"""
-    def __call__(self, f):
-        @functools.wraps(f)
-        def log_exception(e):
-            logger = get_logger()
-            response = f(e)
-            logger.exception(e)
-            return response
+    @functools.wraps(f)
+    def wrapper(e):
+        logger = get_logger()
+        response = f(e)
+        logger.exception(e)
+        return response
 
-        return log_exception
+    return wrapper

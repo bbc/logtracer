@@ -6,7 +6,7 @@ from examples.grpc_resources.grpc_demo_pb2 import EmptyMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import grpc_port
 from stackdriver_logging.flask_helpers.callbacks import before_request, after_request, teardown_request
-from stackdriver_logging.flask_helpers.decorators import LogException
+from stackdriver_logging.flask_helpers.decorators import log_exception
 from stackdriver_logging.jsonlog import get_logger
 from stackdriver_logging.tracing import generate_traced_subspan_values
 
@@ -82,7 +82,7 @@ def unhandled_exception():
 
 
 @app.errorhandler(HandledException)
-@LogException()
+@log_exception
 def exception_handler(e):
     return make_response(jsonify(str(e)), 500)
 

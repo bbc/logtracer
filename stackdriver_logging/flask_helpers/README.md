@@ -1,20 +1,23 @@
 # Flask Helpers
 
-These are utilities designed to make integration with a Flask app simpler. Flask isn't included as a requirement of this
+>These are utilities designed to make integration with a Flask app simpler. Flask isn't included as a requirement of this
 package but it should be in the app you are using this for.
 
 ## Implementation Guide
 Before following these instructions, make sure to follow the instructions in the [main readme](../../README.md).
+Example code exists in `/examples`, look at these for working implementations.
+Once implemented, inbound requests will be logged on opening and closing of the connection and the tracing information will be sent to the Stackdriver Trace API (if desired).
+Exceptions tracebacks and responses will be logged too so avoid using `logger.exception(e)` in your Flask error handlers as this should be handled by this library.
 
 ### Tracing Inbound Requests
 There are two ways you can handle tracing of inbound requests in your Flask app using this package:
-#### 1) Using Flask Callbacks
+#### OPTION 1) Using Flask Callbacks
 Flask has [callbacks](http://flask.pocoo.org/docs/1.0/api/#flask.Flask.after_request) that allow you to run code before and after each request. 
 These callbacks can be used to start and end spans.
 
 ```python
 from flask import Flask
-from stackdriver_logging.flask_helpers.callbacks import start_span_and_log_before, log_response_after, close_span_on_teardown 
+from stackdriver_logging.flask_helpers.callbacks import start_span_and_log_request_before, log_response_after, close_span_on_teardown 
 
 app = Flask('demoFlaskLoggerCallbacks')
 
@@ -23,7 +26,7 @@ exclude = {
     'excluded_routes': ['/excludefull'],
     'excluded_routes_partial': ['/excludepart']
 }
-app.before_request(start_span_and_log_before(**exclude))
+app.before_request(start_span_and_log_request_before(**exclude))
 app.after_request(log_response_after(**exclude))
 app.teardown_request(close_span_on_teardown(**exclude))
 
@@ -46,7 +49,7 @@ def exception_handler(e):
     
 ...
 ```
-#### 2) Using Decorators
+#### OPTION 2) Using Decorators
 If you are looking to log only a few of many endpoints then it may be more appropriate to use decorators. 
 All desired routes should be decorated with `trace_and_log_route` and all desired exception handlers with `trace_and_log_exception`.
 
@@ -78,7 +81,9 @@ from stackdriver_logging.tracing import generate_new_traced_subspan_values
 import requests
 
 ...
+
 response = requests.get('http://madeupurl.com/endpoint-with-stackdriver-logging', headers=generate_new_traced_subspan_values())
+
 ...
 
 ```

@@ -45,14 +45,6 @@ requests must be inside a span, follow one of the guides to implement this:
 - [Implementing Tracing in a gRPC App](stackdriver_logging/grpc_helpers)
 
 
-# todo tw firebreak sprint:
-- finish readme for flask helpers
-- update this readme
-    - say about removal of context? causing confusion 
-- write tests for b3/tracing stuff
-- write tests for helpers
-- write readme for it
-
 ## Purpose
 
 Make it simple to generate and propagate tracing metadata between Python microservices and post them to a tracing API.

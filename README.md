@@ -21,12 +21,6 @@ logger = get_logger()
 logger.setLevel('INFO')
 ```
 
-If you are using the `stackdriver` format locally (unadvised unless you are specifically testing functionality of the Trace API), 
-then you *must* set up authentication for the [google-cloud-trace](https://pypi.org/project/google-cloud-trace/) client using the following command: 
-```
-gcloud auth application-default login
-```
-If you are using it in a Kubernetes container, then it should automatically pick up the GCP credentials. 
 
 ### Tracing
 By default tracing functionality is disabled - tracing IDs will not show in the logs and nothing will be posted to the Stackdriver Trace API.
@@ -38,7 +32,13 @@ import os
 enable_trace_posting = os.getenv('ENABLE_TRACE_POSTING', 'false') == 'true'
 configure_tracing(post_spans_to_api=enable_trace_posting)
 ```
-Authentication for this is managed in the same way as logging above.
+If you choose to enable posting trace information to the API  _locally_ (unadvised unless you are specifically testing functionality of the Trace API), 
+then you *must* set up authentication for the [google-cloud-trace](https://pypi.org/project/google-cloud-trace/) client using the following command: 
+```
+gcloud auth application-default login
+```
+
+If you are using it in a Kubernetes container, then it should automatically pick up the GCP credentials. 
 However, this is not enough to configure tracing - tracing IDs will still not show in logs. To enable tracing functionality, 
 requests must be inside a span, follow one of the guides to implement this:
 - [Implementing Tracing in a Flask App](stackdriver_logging/flask_helpers)
@@ -56,13 +56,13 @@ Using the logging part of this package allows logs to be written in `JSON` forma
 writes the logs in JSON using [python-json-logger](https://github.com/madzak/python-json-logger). Currently two formatters are implemented,
 `local` and `stackdriver`. Examples of each:
 
-####`local`
+#### `local`
 ```
 {"severity": "INFO", "time": "2018-07-25T14:06:05.499727", "sourceLocation": {"file": "/Users/windet01/Files/Code/stackdriver_logging/stackdriver_logging/flask_helpers/decorators.py", "line": 21, "function": "wrapper"}, "message": "demoApp - GET - http://localhost:5010/", "traceId": "854a7fbec6f0c912f6745b514a2ae6ee", "spanID": "231d2786b123764e"}
 ```
 This formatter simply prints the log information to stdout in JSON, with some added fields.
 
-####`stackdriver`
+#### `stackdriver`
 ```
 {"severity": "INFO", "time": "2018-07-25T14:06:09.949433", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/stackdriver_logging/stackdriver_logging/flask_helpers/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/89f78ff01d84e130a43f2461dddb996f", "logging.googleapis.com/spanId": "d259b23ab3d81bdd"}
 ```

@@ -11,9 +11,9 @@ from examples.flask_server_decorators import run_flask_server_decorators, flask_
 from examples.grpc_resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import run_grpc_server, grpc_port
-from stackdriver_logging.jsonlog import configure_json_logging, get_logger
+from logtrace.jsonlog import configure_json_logging, get_logger
 # logging
-from stackdriver_logging.tracing import configure_tracing
+from logtrace.tracing import configure_tracing
 
 service_name = 'demoApp'
 project_name = 'bbc-connected-data'

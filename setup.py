@@ -5,15 +5,15 @@ with open("README.md", "r") as fh:
 
 if __name__ == "__main__":
     setup(
-        name="stackdriver_logging",
-        version="0.1.3b",
+        name="logtrace",
+        version="0.2b",
         author="Datalab",
         author_email="datalab@bbc.co.uk",
         description="Adds distributed tracing information to logger output and sends traces to the Stackdriver "
                     "Trace API.",
         long_description=long_description,
         long_description_content_type="text/markdown",
-        url="https://github.com/bbc/stackdriver_logging",
+        url="https://github.com/bbc/logtrace",
         packages=find_packages(),
         classifiers=(
             "Programming Language :: Python :: 3.6",

@@ -5,9 +5,9 @@ from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
 
-from stackdriver_logging import _b3
-from stackdriver_logging import _global_vars
-from stackdriver_logging._b3 import generate_new_subspan_values
+from logtrace import _b3
+from logtrace import _global_vars
+from logtrace._b3 import generate_new_subspan_values
 
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
 trace_client = TraceServiceClient()

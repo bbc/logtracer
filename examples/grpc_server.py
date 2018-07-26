@@ -5,7 +5,7 @@ from concurrent import futures
 import grpc
 
 from examples.grpc_resources import grpc_demo_pb2_grpc, grpc_demo_pb2
-from stackdriver_logging.grpc_helpers.decorators import trace_all_calls
+from logtrace.grpc_helpers.decorators import trace_all_calls
 
 ONE_DAY_IN_SECONDS = 60 * 60 * 24
 logger = logging.getLogger('demoGRPCLogger')

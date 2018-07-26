@@ -1,7 +1,7 @@
 import logging
 
-from stackdriver_logging import _global_vars
-from stackdriver_logging.jsonlog import configure_json_logging, StackdriverJsonFormatter
+from logtrace import _global_vars
+from logtrace.jsonlog import configure_json_logging, StackdriverJsonFormatter
 
 
 def test_configure_json_logging():

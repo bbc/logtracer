@@ -5,11 +5,11 @@ from flask import Flask, jsonify, make_response
 from examples.grpc_resources.grpc_demo_pb2 import EmptyMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc_server import grpc_port
-from stackdriver_logging.flask_helpers.callbacks import start_span_and_log_request_before, log_response_after, \
+from logtrace.flask_helpers.callbacks import start_span_and_log_request_before, log_response_after, \
     close_span_on_teardown
-from stackdriver_logging.flask_helpers.decorators import log_exception
-from stackdriver_logging.jsonlog import get_logger
-from stackdriver_logging.tracing import generate_new_traced_subspan_values
+from logtrace.flask_helpers.decorators import log_exception
+from logtrace.jsonlog import get_logger
+from logtrace.tracing import generate_new_traced_subspan_values
 
 # flask
 app = Flask('demoFlaskLoggerCallbacks')

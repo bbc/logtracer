@@ -2,8 +2,8 @@ import functools
 
 from flask import request
 
-from stackdriver_logging.jsonlog import get_logger
-from stackdriver_logging.tracing import start_traced_span, end_traced_span
+from logtrace.jsonlog import get_logger
+from logtrace.tracing import start_traced_span, end_traced_span
 
 
 def trace_and_log_route(f):

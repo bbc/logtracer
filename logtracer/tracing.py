@@ -11,7 +11,6 @@ from logtracer import _global_vars
 from logtracer._b3 import generate_new_subspan_values
 
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
-_b3.TRACE_LEN = 32
 
 thread_memory = local()
 thread_memory.span_started = False

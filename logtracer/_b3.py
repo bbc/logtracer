@@ -5,7 +5,7 @@ from binascii import hexlify
 from threading import local
 
 # config
-TRACE_LEN = 16
+TRACE_LEN = 32
 SPAN_LEN = 16
 
 B3_TRACE_ID = 'X-B3-TraceId'
@@ -80,6 +80,9 @@ def generate_new_subspan_values():
     Returns:
          (dict): contains header values for a downstream request. This can be passed directly to e.g. requests.get(...).
     """
+    if not hasattr(b3, 'span'):
+        raise SpanError('`generate_new_subspan_values` must be called after `start_span`')
+
     parent_values = values()
     subspan_values = {
         B3_TRACE_ID: parent_values[B3_TRACE_ID],
@@ -100,7 +103,17 @@ def _generate_identifier(identifier_length):
     Returns:
         (str): A 64-bit random identifier, rendered as a hex String.
     """
+    if not _is_power2(identifier_length):
+        raise ValueError('ID length must be a non-zero power of 2')
     bit_length = identifier_length * 4
     byte_length = int(bit_length / 8)
     identifier = os.urandom(byte_length)
     return hexlify(identifier).decode('ascii')
+
+
+def _is_power2(num):
+    """
+    States if a number is a power of two
+    """
+    return num != 0 and ((num & (num - 1)) == 0)
+

@@ -8,11 +8,11 @@ Install: `pip install git+https://github.com/bbc/python-gcp-trace-logging@[BRANC
 It is good practise to pin the version or your code may break if this package is updated.
 
 ### Logging
-Before writing any logs, the `configure_json_logging` command must be ran.
-There are two formatters availale for usage with logging, `local` and `stackdriver`, described further in the [Purpose](#purpose) section.
+Before writing any logs, the `configure_json_logging` command must be ran _once_.
+There are two formatters available for usage with logging, `local` and `stackdriver`, described further in the [Purpose](#purpose) section.
 It is advisable to set this using an environmental variable, as below:
 ```python
-from stackdriver_logging.jsonlog import configure_json_logging, get_logger
+from logtracer.jsonlog import configure_json_logging, get_logger
 import os
 
 logging_format = os.getenv('LOGGING_FORMAT', 'local')
@@ -20,17 +20,17 @@ configure_json_logging('project name', 'service name', logging_format)
 logger = get_logger()
 logger.setLevel('INFO')
 ```
-
+Once this is configured, use `logtracing.jsonlog.get_logger` to retrieve the logger elsewhere in your code. 
 
 ### Tracing
 By default tracing functionality is disabled - tracing IDs will not show in the logs and nothing will be posted to the Stackdriver Trace API.
 Enable it as follows (using an environmental variable), making sure to do this before writing any logs. It is advised to leave it disabled when working locally.
 ```python
-from stackdriver_logging.tracing import configure_tracing
+from logtracer.tracing import configure_tracing
 import os 
 
 enable_trace_posting = os.getenv('ENABLE_TRACE_POSTING', 'false') == 'true'
-configure_tracing(post_spans_to_api=enable_trace_posting)
+configure_tracing(post_spans_to_stackdriver_api=enable_trace_posting)
 ```
 If you choose to enable posting trace information to the API  _locally_ (unadvised unless you are specifically testing functionality of the Trace API), 
 then you *must* set up authentication for the [google-cloud-trace](https://pypi.org/project/google-cloud-trace/) client using the following command: 
@@ -41,8 +41,8 @@ gcloud auth application-default login
 If you are using it in a Kubernetes container, then it should automatically pick up the GCP credentials. 
 However, this is not enough to configure tracing - tracing IDs will still not show in logs. To enable tracing functionality, 
 requests must be inside a span, follow one of the guides to implement this:
-- [Implementing Tracing in a Flask App](stackdriver_logging/helpers/flask)
-- [Implementing Tracing in a gRPC App](stackdriver_logging/helpers/grpc)
+- [Implementing Tracing in a Flask App](logtracer/helpers/flask)
+- [Implementing Tracing in a gRPC App](logtracer/helpers/grpc)
 
 
 ## Purpose
@@ -58,13 +58,13 @@ writes the logs in JSON using [python-json-logger](https://github.com/madzak/pyt
 
 #### `local`
 ```
-{"severity": "INFO", "time": "2018-07-25T14:06:05.499727", "sourceLocation": {"file": "/Users/windet01/Files/Code/stackdriver_logging/stackdriver_logging/flask_helpers/decorators.py", "line": 21, "function": "wrapper"}, "message": "demoApp - GET - http://localhost:5010/", "traceId": "854a7fbec6f0c912f6745b514a2ae6ee", "spanID": "231d2786b123764e"}
+{"severity": "INFO", "time": "2018-07-25T14:06:05.499727", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/flask_helpers/decorators.py", "line": 21, "function": "wrapper"}, "message": "demoApp - GET - http://localhost:5010/", "traceId": "854a7fbec6f0c912f6745b514a2ae6ee", "spanID": "231d2786b123764e"}
 ```
 This formatter simply prints the log information to stdout in JSON, with some added fields.
 
 #### `stackdriver`
 ```
-{"severity": "INFO", "time": "2018-07-25T14:06:09.949433", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/stackdriver_logging/stackdriver_logging/flask_helpers/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/89f78ff01d84e130a43f2461dddb996f", "logging.googleapis.com/spanId": "d259b23ab3d81bdd"}
+{"severity": "INFO", "time": "2018-07-25T14:06:09.949433", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/flask_helpers/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/89f78ff01d84e130a43f2461dddb996f", "logging.googleapis.com/spanId": "d259b23ab3d81bdd"}
 ```
 This format prints the information to stdout in JSON, with keys named in a way that [Stackdriver Logs](https://cloud.google.com/logging/) is able to parse them.
 The `stackdriver` formatter is useful when working with containers in Google Kubernetes Engine with logging enabled 

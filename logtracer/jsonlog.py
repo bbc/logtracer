@@ -41,7 +41,7 @@ class StackdriverJsonFormatter(jsonlogger.JsonFormatter):
         }
 
         b3_values = _b3.values()
-        if b3_values[_b3.B3_TRACE_ID]:
+        if b3_values.get(_b3.B3_TRACE_ID):
             trace_name = f'projects/{_global_vars.gcp_project_name}/traces/{b3_values[_b3.B3_TRACE_ID]}'
             gcp_log_record.update({
                 'logging.googleapis.com/trace': trace_name,
@@ -75,10 +75,10 @@ class LocalJsonFormatter(jsonlogger.JsonFormatter):
         }
 
         b3_values = _b3.values()
-        if b3_values[_b3.B3_TRACE_ID]:
+        if b3_values.get(_b3.B3_TRACE_ID):
             json_log_record.update({
                 'traceId': b3_values[_b3.B3_TRACE_ID],
-                'spanID': b3_values[_b3.B3_SPAN_ID]
+                'spanId': b3_values[_b3.B3_SPAN_ID]
             })
         log_record.update(json_log_record)
         log_record.pop('exc_info', None)

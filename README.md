@@ -9,8 +9,8 @@ It is good practise to pin the version or your code may break if this package is
 
 ### Logging
 Before writing any logs, the `configure_json_logging` command must be ran.
-There are two formatters availale for usage with logging, `local` and `stackdriver`, descried further in the [#purpose](Purpose) section.
-It is advisable to set this using an environmental variable.
+There are two formatters availale for usage with logging, `local` and `stackdriver`, described further in the [Purpose](#purpose) section.
+It is advisable to set this using an environmental variable, as below:
 ```python
 from stackdriver_logging.jsonlog import configure_json_logging, get_logger
 import os
@@ -41,8 +41,8 @@ gcloud auth application-default login
 If you are using it in a Kubernetes container, then it should automatically pick up the GCP credentials. 
 However, this is not enough to configure tracing - tracing IDs will still not show in logs. To enable tracing functionality, 
 requests must be inside a span, follow one of the guides to implement this:
-- [Implementing Tracing in a Flask App](stackdriver_logging/flask_helpers)
-- [Implementing Tracing in a gRPC App](stackdriver_logging/grpc_helpers)
+- [Implementing Tracing in a Flask App](stackdriver_logging/helpers/flask)
+- [Implementing Tracing in a gRPC App](stackdriver_logging/helpers/grpc)
 
 
 ## Purpose

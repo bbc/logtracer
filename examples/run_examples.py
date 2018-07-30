@@ -6,14 +6,14 @@ import grpc
 import requests
 from grpc._channel import _Rendezvous
 
-from examples.flask_server_callbacks import flask_callbacks_port, run_flask_server_callbacks
-from examples.flask_server_decorators import run_flask_server_decorators, flask_decorators_port
-from examples.grpc_resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
-from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
-from examples.grpc_server import run_grpc_server, grpc_port
-from logtrace.jsonlog import configure_json_logging, get_logger
+from examples.flask.server_callbacks import flask_callbacks_port, run_flask_server_callbacks
+from examples.flask.server_decorators import run_flask_server_decorators, flask_decorators_port
+from examples.grpc.grpc_resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
+from examples.grpc.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
+from examples.grpc.server import run_grpc_server, grpc_port
+from logtracer.jsonlog import configure_json_logging, get_logger
 # logging
-from logtrace.tracing import configure_tracing
+from logtracer.tracing import configure_tracing
 
 service_name = 'demoApp'
 project_name = 'bbc-connected-data'
@@ -46,10 +46,11 @@ def start_servers():
 def run_flask_callbacks_examples():
     time.sleep(1)
     br()
-    # Call the root endpoint of the Flask server. On receiving the request, the server will run `start_span_and_log_request_before` which
-    # will start a span. This generates both a 32 character trace ID and a 16 character span ID and log the request. It
-    # then runs `log_response_after` logs the response code. When the request object is done with, the teardown callack
-    # closes the span. Every time `end_span` is called, logs are sent to the Stackdriver Trace API.
+    # Call the root endpoint of the Flask server. On receiving the request, the server will run `start_span_and_log_
+    # request_before` which will start a span. This generates both a 32 character trace ID and a 16 character span ID
+    # and log the request. It then runs `log_response_after` logs the response code. When the request object is done
+    # with, the teardown callback closes the span. Every time `end_span` is called, logs are sent to the Stackdriver
+    # Trace API.
     br()
     print('FLASK CALLBACKS EXAMPLE')
 

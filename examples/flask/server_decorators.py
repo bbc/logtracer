@@ -2,12 +2,12 @@ import grpc
 import requests
 from flask import Flask, jsonify, make_response
 
-from examples.grpc_resources.grpc_demo_pb2 import DemoMessage
-from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
-from examples.grpc_server import grpc_port
-from logtrace.flask_helpers.decorators import trace_and_log_route, trace_and_log_exception
-from logtrace.jsonlog import get_logger
-from logtrace.tracing import generate_new_traced_subspan_values
+from examples.grpc.grpc_resources.grpc_demo_pb2 import DemoMessage
+from examples.grpc.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
+from examples.grpc.server import grpc_port
+from logtracer.helpers.flask.decorators import trace_and_log_route, trace_and_log_exception
+from logtracer.jsonlog import get_logger
+from logtracer.tracing import generate_new_traced_subspan_values
 
 # flask
 app = Flask('demoFlaskLoggerDecorators')

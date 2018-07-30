@@ -1,26 +1,39 @@
 import time
 from threading import Thread, local
 
+from google.auth.exceptions import DefaultCredentialsError
 from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
 
-from logtrace import _b3
-from logtrace import _global_vars
-from logtrace._b3 import generate_new_subspan_values
+from logtracer import _b3
+from logtracer import _global_vars
+from logtracer._b3 import generate_new_subspan_values
 
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
-trace_client = TraceServiceClient()
+_b3.TRACE_LEN = 32
+
 thread_memory = local()
 thread_memory.span_started = False
-_b3.TRACE_LEN = 32
+trace_client = None
 
 
 class TraceException(Exception):
     pass
 
 
+class StackDriverAuthError(Exception):
+    pass
+
+
 def configure_tracing(post_spans_to_api=False):
+    if post_spans_to_api:
+        try:
+            global trace_client
+            trace_client = TraceServiceClient()
+        except DefaultCredentialsError:
+            raise StackDriverAuthError('Cannot post spans to API, no authentication credentials found.')
+
     _global_vars.post_spans_to_api = post_spans_to_api
 
 
@@ -47,9 +60,13 @@ def end_traced_span():
     """
     b3_values = _b3.values()
     end_timestamp = _get_timestamp()
+    if _global_vars.post_spans_to_api:
+        name = trace_client.span_path(_global_vars.gcp_project_name, b3_values[_b3.B3_TRACE_ID],
+                                                    b3_values[_b3.B3_SPAN_ID])
+    else:
+        name = f'{_global_vars.gcp_project_name}/{b3_values[_b3.B3_TRACE_ID]}/{b3_values[_b3.B3_SPAN_ID]}'
     span_info = {
-        'name': trace_client.span_path(_global_vars.gcp_project_name, b3_values[_b3.B3_TRACE_ID],
-                                       b3_values[_b3.B3_SPAN_ID]),
+        'name': name,
         'span_id': b3_values[_b3.B3_SPAN_ID],
         'display_name': _truncate_str(thread_memory.span['display_name'], limit=SPAN_DISPLAY_NAME_BYTE_LIMIT),
         'start_time': thread_memory.span['start_timestamp'],

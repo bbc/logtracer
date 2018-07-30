@@ -5,7 +5,7 @@ from datetime import datetime
 
 from pythonjsonlogger import jsonlogger
 
-from logtrace import _b3, _global_vars
+from logtracer import _b3, _global_vars
 
 LOG_SEVERITIES = {
     'DEBUG': 'DEBUG',

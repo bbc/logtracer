@@ -175,7 +175,7 @@ def run_grpc_examples():
 if __name__ == '__main__':
     print('****** Local formatted examples with posted traces ******')
     configure_json_logging(project_name, service_name, 'local')
-    configure_tracing(post_spans_to_api=False)
+    configure_tracing(post_spans_to_stackdriver_api=False)
     start_servers()
 
     logger = get_logger()
@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
     print('****** GCP formatted examples with posted traces ******')
     configure_json_logging(project_name, service_name, 'stackdriver')
-    configure_tracing(post_spans_to_api=True)
+    configure_tracing(post_spans_to_stackdriver_api=True)
     logger = get_logger()
     logger.setLevel('DEBUG')
 

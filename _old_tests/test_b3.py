@@ -2,14 +2,15 @@ import re
 
 from pytest import fixture
 
-import logtrace._b3
+import logtracer._b3 as b3
 
 
 @fixture
 def b3():
-    yield logtrace._b3
+    yield b3
     b3.DEBUG = False
-    logtrace._b3._end_subspan()
+    b3._end_subspan()
+    assert not hasattr(b3, 'span')
 
 
 def test_should_generate_root_span_ids(b3):

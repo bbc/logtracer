@@ -26,15 +26,15 @@ class StackDriverAuthError(Exception):
     pass
 
 
-def configure_tracing(post_spans_to_api=False):
-    if post_spans_to_api:
+def configure_tracing(post_spans_to_stackdriver_api=False):
+    if post_spans_to_stackdriver_api:
         try:
             global trace_client
             trace_client = TraceServiceClient()
         except DefaultCredentialsError:
             raise StackDriverAuthError('Cannot post spans to API, no authentication credentials found.')
 
-    _global_vars.post_spans_to_api = post_spans_to_api
+    _global_vars.post_spans_to_stackdriver_api = post_spans_to_stackdriver_api
 
 
 def start_traced_span(incoming_headers, request_path):
@@ -60,11 +60,12 @@ def end_traced_span():
     """
     b3_values = _b3.values()
     end_timestamp = _get_timestamp()
-    if _global_vars.post_spans_to_api:
+    if _global_vars.post_spans_to_stackdriver_api:
         name = trace_client.span_path(_global_vars.gcp_project_name, b3_values[_b3.B3_TRACE_ID],
-                                                    b3_values[_b3.B3_SPAN_ID])
+                                      b3_values[_b3.B3_SPAN_ID])
     else:
         name = f'{_global_vars.gcp_project_name}/{b3_values[_b3.B3_TRACE_ID]}/{b3_values[_b3.B3_SPAN_ID]}'
+
     span_info = {
         'name': name,
         'span_id': b3_values[_b3.B3_SPAN_ID],
@@ -75,7 +76,7 @@ def end_traced_span():
         'same_process_as_parent_span': BoolValue(value=False),
         'child_span_count': Int32Value(value=thread_memory.span['child_span_count'])
     }
-    if _global_vars.post_spans_to_api:
+    if _global_vars.post_spans_to_stackdriver_api:
         post_to_api_job = Thread(target=_post_span, args=(span_info,))
         post_to_api_job.start()
     _b3.end_span()

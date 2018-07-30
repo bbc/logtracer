@@ -23,5 +23,14 @@ if __name__ == "__main__":
             'python-json-logger==0.1.9',
             'google-cloud-trace==0.19.0',
             'protobuf==3.6.0'
-        ]
+        ],
+        test_suite="tests",
+        setup_requires=[
+            'wheel'
+        ],
+        tests_require=[
+            'pytest',
+            'pytest-runner',
+            'flake8',
+            'pytest-cov', ],
     )

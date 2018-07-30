@@ -15,10 +15,10 @@ if __name__ == "__main__":
         long_description_content_type="text/markdown",
         url="https://github.com/bbc/logtrace",
         packages=find_packages(),
-        classifiers=(
+        classifiers=[
             "Programming Language :: Python :: 3.6",
             "Operating System :: OS Independent",
-        ),
+        ],
         install_requires=[
             'python-json-logger==0.1.9',
             'google-cloud-trace==0.19.0',

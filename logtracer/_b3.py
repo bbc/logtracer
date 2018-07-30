@@ -105,6 +105,7 @@ def _generate_identifier(identifier_length):
     """
     if not _is_power2(identifier_length):
         raise ValueError('ID length must be a non-zero power of 2')
+
     bit_length = identifier_length * 4
     byte_length = int(bit_length / 8)
     identifier = os.urandom(byte_length)
@@ -116,4 +117,3 @@ def _is_power2(num):
     States if a number is a power of two
     """
     return num != 0 and ((num & (num - 1)) == 0)
-

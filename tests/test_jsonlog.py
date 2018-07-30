@@ -7,6 +7,10 @@ from logtracer._b3 import B3_SPAN_ID, B3_PARENT_SPAN_ID, B3_TRACE_ID
 from logtracer.jsonlog import StackdriverJsonFormatter, LocalJsonFormatter, configure_json_logging, get_logger
 
 
+class TestException(Exception):
+    pass
+
+
 @patch('logtracer.jsonlog._b3.values', MagicMock(return_value={}))
 def test_StackdriverJsonFormatter_add_fields_no_trace():
     json_formatter = StackdriverJsonFormatter()
@@ -88,10 +92,6 @@ def test_StackdriverJsonFormatter_add_fields_with_trace(m_b3_values):
     }
 
     assert mock_log_record == expected_mock_log_record
-
-
-class TestException(Exception):
-    pass
 
 
 @patch('logtracer.jsonlog._b3.values', MagicMock(return_value={}))

@@ -104,7 +104,7 @@ def _generate_identifier(identifier_length):
         (str): A 64-bit random identifier, rendered as a hex String.
     """
     if not _is_power2(identifier_length):
-        raise ValueError('ID length must be a non-zero power of 2')
+        raise ValueError('ID length must be a positive non-zero power of 2')
 
     bit_length = identifier_length * 4
     byte_length = int(bit_length / 8)

@@ -116,8 +116,8 @@ def test_generate_new_subspan_values_no_span(b3_mem):
 
 @pytest.mark.parametrize('id_len', [2, 4, 8, 16, 32, 64, 128, 256, 512])
 def test_generate_identifier(id_len):
-    id = _generate_identifier(id_len)
-    assert re.match("[a-fA-F0-9]{%d}" % id_len, id)
+    gen_id = _generate_identifier(id_len)
+    assert re.match("[a-fA-F0-9]{%d}" % id_len, gen_id)
 
 
 @pytest.mark.parametrize('id_len', [0, 3, 15, -5])

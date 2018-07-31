@@ -1,0 +1,70 @@
+****** Local formatted examples with posted traces ******
+{"severity": "INFO", "time": "2018-07-31T16:52:16.230331", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/examples/flask/callbacks/server.py", "line": 93, "function": "run_flask_server_callbacks"}, "message": "root - Starting flask server on http://localhost:5005."}
+ * Serving Flask app "demoFlaskLoggerCallbacks" (lazy loading)
+ * Environment: production
+   WARNING: Do not use the development server in a production environment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+
+
+FLASK CALLBACKS EXAMPLE
+Single call to Flask root endpoint:
+{"severity": "INFO", "time": "2018-07-31T16:52:17.254365", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/", "traceId": "53eeba07d6d920a6538176cec1b3b5d6", "spanId": "b40b5e56bd44fb30"}
+{"severity": "INFO", "time": "2018-07-31T16:52:17.255896", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 36, "function": "execute_after_request"}, "message": "demoApp - 200 OK - http://localhost:5005/", "traceId": "53eeba07d6d920a6538176cec1b3b5d6", "spanId": "b40b5e56bd44fb30"}
+Done
+
+
+Double call to Flask endpoints:
+{"severity": "INFO", "time": "2018-07-31T16:52:17.267980", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/doublehttp", "traceId": "c35fbb6f43c698ec3ab29a2b6dee2a11", "spanId": "acb1b500f54be376"}
+{"severity": "INFO", "time": "2018-07-31T16:52:17.283833", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/", "traceId": "c35fbb6f43c698ec3ab29a2b6dee2a11", "spanId": "96575ccda8cec0c5"}
+{"severity": "INFO", "time": "2018-07-31T16:52:17.285278", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 36, "function": "execute_after_request"}, "message": "demoApp - 200 OK - http://localhost:5005/", "traceId": "c35fbb6f43c698ec3ab29a2b6dee2a11", "spanId": "96575ccda8cec0c5"}
+{"severity": "INFO", "time": "2018-07-31T16:52:17.290241", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 36, "function": "execute_after_request"}, "message": "demoApp - 200 OK - http://localhost:5005/doublehttp", "traceId": "c35fbb6f43c698ec3ab29a2b6dee2a11", "spanId": "acb1b500f54be376"}
+Done
+
+
+Two calls to excluded endpoints:
+Done
+
+
+Call to handled exception:
+{"severity": "INFO", "time": "2018-07-31T16:52:17.320896", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/handledexception", "traceId": "6b1df106fb3abaa0341dfa59a097bd03", "spanId": "d99f2bd315002410"}
+{"severity": "ERROR", "time": "2018-07-31T16:52:17.322331", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/decorators.py", "line": 55, "function": "wrapper"}, "message": "demoApp - Exception: HandledException(This is a handled Exception!)\nTraceback:\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1813, in full_dispatch_request\n    rv = self.dispatch_request()\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1799, in dispatch_request\n    return self.view_functions[rule.endpoint](**req.view_args)\n\n  File \"/Users/windet01/Files/Code/logtracer/examples/flask/callbacks/server.py\", line 77, in handled_exception\n    raise HandledException('This is a handled Exception!')\n", "traceId": "6b1df106fb3abaa0341dfa59a097bd03", "spanId": "d99f2bd315002410"}
+{"severity": "ERROR", "time": "2018-07-31T16:52:17.326213", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 34, "function": "execute_after_request"}, "message": "demoApp - 500 INTERNAL SERVER ERROR - http://localhost:5005/handledexception", "traceId": "6b1df106fb3abaa0341dfa59a097bd03", "spanId": "d99f2bd315002410"}
+Call to unhandled exception:
+{"severity": "INFO", "time": "2018-07-31T16:52:17.336590", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/unhandledexception", "traceId": "29516248eacc86d0376e556cddafa8cb", "spanId": "24d95b721c5deadc"}
+{"severity": "ERROR", "time": "2018-07-31T16:52:17.337939", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py", "line": 1761, "function": "log_exception"}, "message": "flask.app - Exception: UnhandledException(This is an unhandled Exception!)\nTraceback:\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 2292, in wsgi_app\n    response = self.full_dispatch_request()\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1815, in full_dispatch_request\n    rv = self.handle_user_exception(e)\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1718, in handle_user_exception\n    reraise(exc_type, exc_value, tb)\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/_compat.py\", line 35, in reraise\n    raise value\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1813, in full_dispatch_request\n    rv = self.dispatch_request()\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1799, in dispatch_request\n    return self.view_functions[rule.endpoint](**req.view_args)\n\n  File \"/Users/windet01/Files/Code/logtracer/examples/flask/callbacks/server.py\", line 82, in unhandled_exception\n    raise UnhandledException('This is an unhandled Exception!')\n", "traceId": "29516248eacc86d0376e556cddafa8cb", "spanId": "24d95b721c5deadc"}
+Done
+
+
+****** GCP formatted examples with posted traces ******
+/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/google/auth/_default.py:66: UserWarning: Your application has authenticated using end user credentials from Google Cloud SDK. We recommend that most server applications use service accounts instead. If your application continues to use end user credentials from Cloud SDK, you might receive a "quota exceeded" or "API not enabled" error. For more information about service accounts, see https://cloud.google.com/docs/authentication/.
+  warnings.warn(_CLOUD_SDK_CREDENTIALS_WARNING)
+
+
+FLASK CALLBACKS EXAMPLE
+Single call to Flask root endpoint:
+{"severity": "INFO", "time": "2018-07-31T16:52:19.055877", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/fb10ecb19f19cbf412dfb8016f77b98b", "logging.googleapis.com/spanId": "9b149077ea377ae6"}
+{"severity": "INFO", "time": "2018-07-31T16:52:19.057625", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 36, "function": "execute_after_request"}, "message": "demoApp - 200 OK - http://localhost:5005/", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/fb10ecb19f19cbf412dfb8016f77b98b", "logging.googleapis.com/spanId": "9b149077ea377ae6"}
+Done
+
+
+Double call to Flask endpoints:
+{"severity": "INFO", "time": "2018-07-31T16:52:19.073891", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/doublehttp", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/d3388e4bb4c5220a7efda5827a930d32", "logging.googleapis.com/spanId": "991194b68297edeb"}
+{"severity": "INFO", "time": "2018-07-31T16:52:19.089805", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/d3388e4bb4c5220a7efda5827a930d32", "logging.googleapis.com/spanId": "a3929df5ba325878"}
+{"severity": "INFO", "time": "2018-07-31T16:52:19.091179", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 36, "function": "execute_after_request"}, "message": "demoApp - 200 OK - http://localhost:5005/", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/d3388e4bb4c5220a7efda5827a930d32", "logging.googleapis.com/spanId": "a3929df5ba325878"}
+{"severity": "INFO", "time": "2018-07-31T16:52:19.098928", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 36, "function": "execute_after_request"}, "message": "demoApp - 200 OK - http://localhost:5005/doublehttp", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/d3388e4bb4c5220a7efda5827a930d32", "logging.googleapis.com/spanId": "991194b68297edeb"}
+Done
+
+
+Two calls to excluded endpoints:
+Done
+
+
+Call to handled exception:
+{"severity": "INFO", "time": "2018-07-31T16:52:19.163878", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/handledexception", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/8fc52517ac2252b66e6d51c8026b52db", "logging.googleapis.com/spanId": "2c4de422fcd09973"}
+{"severity": "ERROR", "time": "2018-07-31T16:52:19.165361", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/decorators.py", "line": 55, "function": "wrapper"}, "message": "demoApp - Exception: HandledException(This is a handled Exception!)\nTraceback:\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1813, in full_dispatch_request\n    rv = self.dispatch_request()\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1799, in dispatch_request\n    return self.view_functions[rule.endpoint](**req.view_args)\n\n  File \"/Users/windet01/Files/Code/logtracer/examples/flask/callbacks/server.py\", line 77, in handled_exception\n    raise HandledException('This is a handled Exception!')\n", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/8fc52517ac2252b66e6d51c8026b52db", "logging.googleapis.com/spanId": "2c4de422fcd09973"}
+{"severity": "ERROR", "time": "2018-07-31T16:52:19.166871", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 34, "function": "execute_after_request"}, "message": "demoApp - 500 INTERNAL SERVER ERROR - http://localhost:5005/handledexception", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/8fc52517ac2252b66e6d51c8026b52db", "logging.googleapis.com/spanId": "2c4de422fcd09973"}
+Call to unhandled exception:
+{"severity": "INFO", "time": "2018-07-31T16:52:19.193015", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/logtracer/helpers/flask/callbacks.py", "line": 17, "function": "execute_before_request"}, "message": "demoApp - GET - http://localhost:5005/unhandledexception", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/c08eaf4d2e04ecf5f43e2e7254f5442d", "logging.googleapis.com/spanId": "efa3c21c858ef173"}
+{"severity": "ERROR", "time": "2018-07-31T16:52:19.194448", "logging.googleapis.com/sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py", "line": 1761, "function": "log_exception"}, "message": "flask.app - Exception: UnhandledException(This is an unhandled Exception!)\nTraceback:\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 2292, in wsgi_app\n    response = self.full_dispatch_request()\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1815, in full_dispatch_request\n    rv = self.handle_user_exception(e)\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1718, in handle_user_exception\n    reraise(exc_type, exc_value, tb)\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/_compat.py\", line 35, in reraise\n    raise value\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1813, in full_dispatch_request\n    rv = self.dispatch_request()\n\n  File \"/Users/windet01/Files/Code/logtracer/venv/lib/python3.7/site-packages/flask/app.py\", line 1799, in dispatch_request\n    return self.view_functions[rule.endpoint](**req.view_args)\n\n  File \"/Users/windet01/Files/Code/logtracer/examples/flask/callbacks/server.py\", line 82, in unhandled_exception\n    raise UnhandledException('This is an unhandled Exception!')\n", "logging.googleapis.com/trace": "projects/bbc-connected-data/traces/c08eaf4d2e04ecf5f43e2e7254f5442d", "logging.googleapis.com/spanId": "efa3c21c858ef173"}
+Done

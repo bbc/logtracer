@@ -34,7 +34,7 @@ def log_response_after(excluded_routes=None, excluded_routes_partial=None):
                 logger.error(f'{response.status} - {request.url}')
             else:
                 logger.info(f'{response.status} - {request.url}')
-            return response
+        return response
 
     return execute_after_request
 

@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch, call
 
-from logtracer.helpers.flask.decorators import trace_and_log_route, trace_and_log_exception, log_exception
+from logtracer.helpers.flask.decorators import trace_and_log_route, log_exception_and_close_span, log_exception
 
 
 @patch('logtracer.helpers.flask.decorators.start_traced_span')
@@ -37,7 +37,7 @@ def test_trace_and_log_exception(m_request, m_get_logger, m_end_traced_span):
     m_exception_handler.return_value = m_response
     m_request.url = 'test_url'
 
-    wrapper = trace_and_log_exception(m_exception_handler)
+    wrapper = log_exception_and_close_span(m_exception_handler)
     response = wrapper(m_exception)
 
     m_exception_handler.assert_called_with(m_exception)

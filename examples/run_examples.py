@@ -6,8 +6,8 @@ import grpc
 import requests
 from grpc._channel import _Rendezvous
 
-from examples.flask.server_callbacks import flask_callbacks_port, run_flask_server_callbacks
-from examples.flask.server_decorators import run_flask_server_decorators, flask_decorators_port
+from examples.flask.callbacks.server import flask_callbacks_port, run_flask_server_callbacks
+from examples.flask.decorators.server import run_flask_server_decorators, flask_decorators_port
 from examples.grpc.grpc_resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
 from examples.grpc.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc.server import run_grpc_server, grpc_port

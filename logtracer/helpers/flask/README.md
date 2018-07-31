@@ -10,16 +10,14 @@ Once implemented, inbound requests will be logged on opening and closing of the 
 Exceptions tracebacks and responses will be logged too so avoid using `logger.exception(e)` in your Flask error handlers as this should be handled by this library.
 
 ### Tracing Inbound Requests
-There are two ways you can handle tracing of inbound requests in your Flask app using this package:
-#### OPTION 1) Using Flask Callbacks
 Flask has [callbacks](http://flask.pocoo.org/docs/1.0/api/#flask.Flask.after_request) that allow you to run code before and after each request. 
-These callbacks can be used to start and end spans.
+These callbacks can be used to start and end spans and log the requests.
 
 ```python
 from flask import Flask
-from stackdriver_logging.flask_helpers.callbacks import start_span_and_log_request_before, log_response_after, close_span_on_teardown 
+from logtracer.helpers.flask.callbacks import start_span_and_log_request_before, log_response_after, close_span_on_teardown 
 
-app = Flask('demoFlaskLoggerCallbacks')
+app = Flask('demoFlaskApp')
 
 
 exclude = {
@@ -35,9 +33,9 @@ app.teardown_request(close_span_on_teardown(**exclude))
 If you wish to exclude certain endpoints from tracing, then you can either exclude the full route using the `excluded_routes` parameter,
 or exclude a partial route using the `excluded_routes_partial` - this is useful for routes with path variables.
 
-To properly log exceptions, the `log_exception` decorator must be added to any of your implemented Flask error handlers.
+To properly log exception tracebacks, the `log_exception` decorator must be added to any of your implemented Flask error handlers.
 ```python
-from stackdriver_logging.flask_helpers.decorators import log_exception
+from logtracer.helpers.flask.decorators import log_exception
 from flask import make_response, jsonify
 
 ...
@@ -49,25 +47,6 @@ def exception_handler(e):
     
 ...
 ```
-#### OPTION 2) Using Decorators
-If you are looking to log only a few of many endpoints then it may be more appropriate to use decorators. 
-All desired routes should be decorated with `trace_and_log_route` and all desired exception handlers with `trace_and_log_exception`.
-
-```python
-from stackdriver_logging.flask_helpers.decorators import trace_and_log_route, trace_and_log_exception
-from flask import make_response, jsonify
-
-@trace_and_log_route
-def index():
-    return jsonify({}), 200
-
-@app.errorhandler(Exception)
-@trace_and_log_exception
-def exception_handler(e):
-    return make_response(jsonify(str(e)), 500)
-
-...
-```
 
 ### Managing Subspans
 When making a call to a downstream service, a values for the subspan must be created. Previous versions of this package
@@ -77,7 +56,7 @@ it may come back in a later version.
 When making an outbound HTTP request to another service implementing this library, the tracing values should be sent in the header. 
 This is as simple as
 ```python
-from stackdriver_logging.tracing import generate_new_traced_subspan_values
+from logtracer.tracing import generate_new_traced_subspan_values
 import requests
 
 ...
@@ -91,7 +70,7 @@ Similarly, when calling a downstream gRPC service, the code should look similar 
 ```python
 from examples.grpc_resources.grpc_demo_pb2 import EmptyMessage
 from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
-from stackdriver_logging.tracing import generate_new_traced_subspan_values
+from logtracer.tracing import generate_new_traced_subspan_values
 import grpc 
 
 channel = grpc.insecure_channel(f'localhost:{grpc_port}')

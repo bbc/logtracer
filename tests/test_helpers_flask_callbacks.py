@@ -1,7 +1,3 @@
-# do these then done
-# separate out examples and do double grpc call
-# remove mixed example
-# set up with drone
 from unittest.mock import patch, MagicMock
 
 import pytest

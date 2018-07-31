@@ -50,8 +50,8 @@ def run_flask_examples():
     print('Done')
 
     br()
-    # Do as the first example but call endpoints which are 'excluded', these should not appear in the logs.
-    print('Two calls to excluded endpoints:')
+    # Do as the first example but call endpoints which are 'excluded', these should not appear in the Trace API.
+    print('Two calls to endpoints excluded from Trace API:')
     requests.get(f'http://localhost:{flask_port}/excludefull')
     requests.get(f'http://localhost:{flask_port}/excludepartial')
     print('Done')
@@ -66,7 +66,7 @@ def run_flask_examples():
 
 
 if __name__ == '__main__':
-    print('****** Local formatted examples with posted traces ******')
+    print('****** Local formatted examples with non-posted traces ******')
     configure_json_logging(project_name, service_name, 'local')
     configure_tracing(post_spans_to_stackdriver_api=False)
     start_servers()

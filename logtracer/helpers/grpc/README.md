@@ -16,8 +16,8 @@ The decorator accepts an argument for `redacted_fields` to be specified, as by d
 It will replace any matching fields with `"REDACTED"` and ignore if it cant find the field. You may specify nested fields.
 
 ```python
-from stackdriver_logging.grpc_helpers.decorators import trace_all_calls
-from examples.grpc_resources import grpc_demo_pb2_grpc, grpc_demo_pb2
+from logtracer.helpers.grpc.decorators import trace_all_calls
+from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
 
 @trace_all_calls(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
 class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
@@ -27,8 +27,8 @@ class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
 ```
 
 ```python
-from stackdriver_logging.grpc_helpers.decorators import trace_call
-from examples.grpc_resources import grpc_demo_pb2_grpc, grpc_demo_pb2
+from logtracer.helpers.grpc.decorators import trace_call
+from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
 
 class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
     @trace_call(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
@@ -36,7 +36,7 @@ class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
         return grpc_demo_pb2.EmptyMessage()
 
 ```
-If handling exceptions with decorators, then the exception decorators should be _above_ the `trace_all_calls` decorator or the `trace_call` decorators.
+If handling exceptions with decorators, then the exception-handling decorators should be _above_ the `trace_all_calls` decorator or the `trace_call` decorators.
 
 ### Managing Subspans
 When making a call to a downstream service, a values for the subspan must be created. Previous versions of this package
@@ -46,7 +46,7 @@ it may come back in a later version.
 When making an outbound HTTP request to another service implementing this library, the tracing values should be sent in the header. 
 This is as simple as
 ```python
-from stackdriver_logging.tracing import generate_new_traced_subspan_values
+from logtracer.tracing import generate_new_traced_subspan_values
 import requests
 
 ...
@@ -58,9 +58,9 @@ response = requests.get('http://madeupurl.com/endpoint-with-stackdriver-logging'
 ```
 Similarly, when calling a downstream gRPC service, the code should look similar to the following
 ```python
-from examples.grpc_resources.grpc_demo_pb2 import EmptyMessage
-from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
-from stackdriver_logging.tracing import generate_new_traced_subspan_values
+from examples.grpc.resources.grpc_demo_pb2 import EmptyMessage
+from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
+from logtracer.tracing import generate_new_traced_subspan_values
 import grpc 
 
 channel = grpc.insecure_channel(f'localhost:{grpc_port}')

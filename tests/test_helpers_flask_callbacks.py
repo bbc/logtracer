@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 from pytest import mark
 
 from logtracer.helpers.flask.callbacks import start_span_and_log_request_before, log_response_after, \
-    close_span_on_teardown, _is_path_excluded
+    close_span_and_post_on_teardown, _is_path_excluded
 
 
 @patch('logtracer.helpers.flask.callbacks.start_traced_span')
@@ -105,7 +105,7 @@ def test_log_response_after_excluded_route(m_get_logger, m_path_exclude, error_s
 def test_close_span_on_teardown(m_end_traced_span, m_path_exclude):
     m_path_exclude.return_value = False
 
-    execute_on_teardown = close_span_on_teardown(['excluded_routes'], ['excluded_partial_routes'])
+    execute_on_teardown = close_span_and_post_on_teardown(['excluded_routes'], ['excluded_partial_routes'])
     execute_on_teardown(MagicMock())
 
     m_path_exclude.assert_called_with(['excluded_routes'], ['excluded_partial_routes'])
@@ -117,7 +117,7 @@ def test_close_span_on_teardown(m_end_traced_span, m_path_exclude):
 def test_close_span_on_teardown_excluded_route(m_end_traced_span, m_path_exclude):
     m_path_exclude.return_value = True
 
-    execute_on_teardown = close_span_on_teardown(['excluded_routes'], ['excluded_partial_routes'])
+    execute_on_teardown = close_span_and_post_on_teardown(['excluded_routes'], ['excluded_partial_routes'])
     execute_on_teardown(MagicMock())
 
     m_path_exclude.assert_called_with(['excluded_routes'], ['excluded_partial_routes'])

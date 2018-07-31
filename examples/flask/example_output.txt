@@ -1,5 +1,5 @@
 ****** Local formatted examples with posted traces ******
-{"severity": "INFO", "time": "2018-07-31T16:52:16.230331", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/examples/flask/callbacks/server.py", "line": 93, "function": "run_flask_server_callbacks"}, "message": "root - Starting flask server on http://localhost:5005."}
+{"severity": "INFO", "time": "2018-07-31T16:52:16.230331", "sourceLocation": {"file": "/Users/windet01/Files/Code/logtracer/examples/flask/callbacks/server.py", "line": 93, "function": "run_flask_server"}, "message": "root - Starting flask server on http://localhost:5005."}
  * Serving Flask app "demoFlaskLoggerCallbacks" (lazy loading)
  * Environment: production
    WARNING: Do not use the development server in a production environment.

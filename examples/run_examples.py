@@ -6,7 +6,7 @@ import grpc
 import requests
 from grpc._channel import _Rendezvous
 
-from examples.flask.callbacks.server import flask_callbacks_port, run_flask_server_callbacks
+from examples.flask.server import flask_port, run_flask_server
 from examples.flask.decorators.server import run_flask_server_decorators, flask_decorators_port
 from examples.grpc.grpc_resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
 from examples.grpc.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
@@ -32,7 +32,7 @@ def br():
 
 
 def start_servers():
-    flask_callbacks_server_thread = Thread(target=run_flask_server_callbacks)
+    flask_callbacks_server_thread = Thread(target=run_flask_server)
     flask_callbacks_server_thread.start()
     flask_server_decorators_server_thread = Thread(target=run_flask_server_decorators)
     flask_server_decorators_server_thread.start()
@@ -55,7 +55,7 @@ def run_flask_callbacks_examples():
     print('FLASK CALLBACKS EXAMPLE')
 
     print('Single call to Flask root endpoint:')
-    requests.get(f'http://localhost:{flask_callbacks_port}/')
+    requests.get(f'http://localhost:{flask_port}/')
     print('Done')
 
     br()
@@ -63,22 +63,22 @@ def run_flask_callbacks_examples():
     # subspan with the same trace ID as the initial request and a new span ID will be generated. Confirm this in the
     # log outputs.
     print('Double call to Flask endpoints:')
-    requests.get(f'http://localhost:{flask_callbacks_port}/doublehttp')
+    requests.get(f'http://localhost:{flask_port}/doublehttp')
     print('Done')
 
     br()
     # Do as the first example but call endpoints which are 'excluded', these should not appear in the logs.
     print('Two calls to excluded endpoints:')
-    requests.get(f'http://localhost:{flask_callbacks_port}/excludefull')
-    requests.get(f'http://localhost:{flask_callbacks_port}/excludepartial')
+    requests.get(f'http://localhost:{flask_port}/excludefull')
+    requests.get(f'http://localhost:{flask_port}/excludepartial')
     print('Done')
 
     br()
     # Do as the first example but call endpoints which are 'excluded', these should not appear in the logs.
     print('Call to handled exception:')
-    requests.get(f'http://localhost:{flask_callbacks_port}/handledexception')
+    requests.get(f'http://localhost:{flask_port}/handledexception')
     print('Call to unhandled exception:')
-    requests.get(f'http://localhost:{flask_callbacks_port}/unhandledexception')
+    requests.get(f'http://localhost:{flask_port}/unhandledexception')
     print('Done')
 
 
@@ -168,7 +168,7 @@ def run_grpc_examples():
     # is created with the same trace ID but a new span ID.
     br()
     print('Call to Flask endpoint that calls gRPC endpoint:')
-    requests.get(f'http://localhost:{flask_callbacks_port}/grpc')
+    requests.get(f'http://localhost:{flask_port}/grpc')
     print('Done')
 
 

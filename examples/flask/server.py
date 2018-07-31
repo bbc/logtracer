@@ -2,31 +2,27 @@ import grpc
 import requests
 from flask import Flask, jsonify, make_response
 
-from examples.grpc.grpc_resources.grpc_demo_pb2 import EmptyMessage
-from examples.grpc.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
+from examples.grpc.resources.grpc_demo_pb2 import EmptyMessage
+from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc.server import grpc_port
 from logtracer.helpers.flask.callbacks import start_span_and_log_request_before, log_response_after, \
-    close_span_on_teardown
+    close_span_and_post_on_teardown
 from logtracer.helpers.flask.decorators import log_exception
 from logtracer.jsonlog import get_logger
 from logtracer.tracing import generate_new_traced_subspan_values
 
 # flask
-app = Flask('demoFlaskLoggerCallbacks')
-flask_callbacks_port = 5005
+app = Flask('demoFlaskApp')
+flask_port = 5005
 
 # logging
 logger = get_logger()
 logger.setLevel('DEBUG')
 
 # functions to run before and after a request is made
-exclude = {
-    'excluded_routes': ['/excludefull'],
-    'excluded_routes_partial': ['/excludepa']
-}
-app.before_request(start_span_and_log_request_before(**exclude))
-app.after_request(log_response_after(**exclude))
-app.teardown_request(close_span_on_teardown(**exclude))
+app.before_request(start_span_and_log_request_before())
+app.after_request(log_response_after())
+app.teardown_request(close_span_and_post_on_teardown(excluded_routes=['/excludefull'], excluded_partial_routes=['/excludepa']))
 #
 # for grpc request
 channel = grpc.insecure_channel(f'localhost:{grpc_port}')
@@ -50,7 +46,7 @@ def grpc():
 
 @app.route('/doublehttp', methods=['GET'])
 def doublehttp():
-    requests.get(f'http://localhost:{flask_callbacks_port}', headers=generate_new_traced_subspan_values())
+    requests.get(f'http://localhost:{flask_port}', headers=generate_new_traced_subspan_values())
     return jsonify({}), 200
 
 
@@ -89,6 +85,6 @@ def exception_handler(e):
 
 
 # server
-def run_flask_server_callbacks():
-    logger.info(f'Starting flask server on http://localhost:{flask_callbacks_port}.')
-    app.run(host='0.0.0.0', port=flask_callbacks_port, debug=False, threaded=True)
+def run_flask_server():
+    logger.info(f'Starting flask server on http://localhost:{flask_port}.')
+    app.run(host='0.0.0.0', port=flask_port, debug=False, threaded=True)

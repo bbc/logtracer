@@ -4,7 +4,7 @@ from concurrent import futures
 
 import grpc
 
-from examples.grpc.grpc_resources import grpc_demo_pb2_grpc, grpc_demo_pb2
+from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
 from logtracer.helpers.grpc.decorators import trace_all_calls
 
 ONE_DAY_IN_SECONDS = 60 * 60 * 24

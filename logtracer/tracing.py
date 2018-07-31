@@ -52,7 +52,7 @@ def start_traced_span(incoming_headers, request_path):
     _b3.start_span(incoming_headers)
 
 
-def end_traced_span():
+def end_traced_span(post_span=True):
     """
     End a b3 span and collect details about the span, then post it to the API
     (depending on the `_global_vars.post_spans_to_api` flag).
@@ -75,7 +75,7 @@ def end_traced_span():
         'same_process_as_parent_span': BoolValue(value=False),
         'child_span_count': Int32Value(value=thread_memory.span['child_span_count'])
     }
-    if _global_vars.post_spans_to_stackdriver_api:
+    if _global_vars.post_spans_to_stackdriver_api and post_span:
         post_to_api_job = Thread(target=_post_span, args=(span_info,))
         post_to_api_job.start()
     _b3.end_span()

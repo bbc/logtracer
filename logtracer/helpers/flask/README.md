@@ -24,14 +24,14 @@ exclude = {
     'excluded_routes': ['/excludefull'],
     'excluded_routes_partial': ['/excludepart']
 }
-app.before_request(start_span_and_log_request_before(**exclude))
-app.after_request(log_response_after(**exclude))
+app.before_request(start_span_and_log_request_before())
+app.after_request(log_response_after())
 app.teardown_request(close_span_on_teardown(**exclude))
 
 ...
 ```
-If you wish to exclude certain endpoints from tracing, then you can either exclude the full route using the `excluded_routes` parameter,
-or exclude a partial route using the `excluded_routes_partial` - this is useful for routes with path variables.
+If you wish to exclude traces from certain endpoints being posted to the Trace API, then you can either exclude the full 
+route using the `excluded_routes` parameter, or exclude a partial route using the `excluded_routes_partial` - this is useful for routes with path variables.
 
 To properly log exception tracebacks, the `log_exception` decorator must be added to any of your implemented Flask error handlers.
 ```python
@@ -68,8 +68,8 @@ response = requests.get('http://madeupurl.com/endpoint-with-stackdriver-logging'
 ```
 Similarly, when calling a downstream gRPC service, the code should look similar to the following
 ```python
-from examples.grpc_resources.grpc_demo_pb2 import EmptyMessage
-from examples.grpc_resources.grpc_demo_pb2_grpc import DemoServiceStub
+from examples.grpc.resources.grpc_demo_pb2 import EmptyMessage
+from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
 from logtracer.tracing import generate_new_traced_subspan_values
 import grpc 
 

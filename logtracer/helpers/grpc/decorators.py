@@ -17,7 +17,7 @@ def _rgetattr(obj, attr, *args):
     return functools.reduce(_getattr, [obj] + attr.split('.'))
 
 
-def redacted_request(request, fields):
+def redact_request(request, fields):
     """
     Returns a copy of the request with sensitive items redacted.
     Does not mutate the original but returns a deep clone.
@@ -41,7 +41,7 @@ def trace_call(redacted_fields=None):
             start_traced_span(b3_values, f.__name__)
             logger.info(
                 f"gRPC - Call '{f.__name__}': "
-                f"{redacted_request(request, redacted_fields) if request.ListFields() else {}}"
+                f"{redact_request(request, redacted_fields) if request.ListFields() else {}}"
             )
             try:
                 response = f(self, request, context)
@@ -53,7 +53,9 @@ def trace_call(redacted_fields=None):
             logger.info(f"gRPC - Return '{f.__name__}'")
             end_traced_span()
             return response
+
         return log_span
+
     return trace_call_decorator
 
 
@@ -66,6 +68,7 @@ def trace_all_calls(redacted_fields=None):
                 def wrapper(f):
                     trace_call_decorator = trace_call(redacted_fields)
                     return trace_call_decorator(f)
+
                 setattr(cls, attr, wrapper(getattr(cls, attr)))
         return cls
 

@@ -8,10 +8,7 @@ from logtracer.tracing import start_traced_span, end_traced_span
 
 def trace_and_log_route(f):
     """
-    Decorator to handle starting a span, logging it, closing it, logging it, and logging exceptions.
-
-    If an exception is caught, it is logged to stdout then raised again so the appropriate Flask error handler
-    can deal with it.
+    Decorator to handle starting a span, logging/tracing it, closing it, and logging/tracing it.
     """
 
     @functools.wraps(f)
@@ -27,11 +24,15 @@ def trace_and_log_route(f):
     return wrapper
 
 
-def trace_and_log_exception(f):
-    @functools.wraps(f)
+def trace_and_log_exception(exception_handler):
+    """
+    Decorator for flask exception handlers to close and log spans.
+    """
+
+    @functools.wraps(exception_handler)
     def wrapper(e):
         logger = get_logger()
-        response = f(e)
+        response = exception_handler(e)
         logger.exception(e)
         logger.error(f'{response.status} - {request.url}')
         end_traced_span()
@@ -41,8 +42,12 @@ def trace_and_log_exception(f):
 
 
 def log_exception(f):
-    """For usage with callbacks - cant access exception object in callbacks (if they are handled) so have to add this
-    decorator to the error handlers"""
+    """
+    For usage with `logtracer.helpers.flask.callbacks` - cant access exception object in callbacks if they are handled
+    by an exception handlers so add this decorator to any of your Flask exception handlers to make sure the stack
+    traces are logged.
+    """
+
     @functools.wraps(f)
     def wrapper(e):
         logger = get_logger()

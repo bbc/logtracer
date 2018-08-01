@@ -38,47 +38,4 @@ class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
 ```
 If handling exceptions with decorators, then the exception-handling decorators should be _above_ the `trace_all_calls` decorator or the `trace_call` decorators.
 
-### Managing Subspans
-When making a call to a downstream service, a values for the subspan must be created. Previous versions of this package
-implemented a context manager, this version removes that functionality to keep things as simple as possible to implement - 
-it may come back in a later version.
 
-When making an outbound HTTP request to another service implementing this library, the tracing values should be sent in the header. 
-This is as simple as
-```python
-from logtracer.tracing import generate_new_traced_subspan_values
-import requests
-
-...
-
-response = requests.get('http://madeupurl.com/endpoint-with-stackdriver-logging', headers=generate_new_traced_subspan_values())
-
-...
-
-```
-Similarly, when calling a downstream gRPC service, the code should look similar to the following
-```python
-from examples.grpc.resources.grpc_demo_pb2 import EmptyMessage
-from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
-from logtracer.tracing import generate_new_traced_subspan_values
-import grpc 
-
-channel = grpc.insecure_channel(f'localhost:{grpc_port}')
-stub = DemoServiceStub(channel)
-
-...
-
-message = EmptyMessage(
-    b3_values=generate_new_traced_subspan_values()
-)
-stub.DemoRPC(message)
-
-...
-```
-I.e. the B3 values should be included in the message. In the `proto` spec, this message looks like
-```proto
-message EmptyMessage {
-    map<string,string> b3_values = <N>;
-}
-```
-where `<N>` is the number of the field.

@@ -121,6 +121,6 @@ def test_generate_identifier(id_len):
 
 
 @pytest.mark.parametrize('id_len', [0, 3, 15, -5])
-def test_generate_identifier(id_len):
+def test_generate_identifier_fail(id_len):
     with pytest.raises(ValueError):
         _generate_identifier(id_len)

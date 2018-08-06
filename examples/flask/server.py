@@ -22,7 +22,10 @@ logger.setLevel('DEBUG')
 # functions to run before and after a request is made
 app.before_request(start_span_and_log_request_before())
 app.after_request(log_response_after())
-app.teardown_request(close_span_and_post_on_teardown(excluded_routes=['/excludefull'], excluded_partial_routes=['/excludepa']))
+app.teardown_request(close_span_and_post_on_teardown(
+    excluded_routes=['/exclude-full'],
+    excluded_partial_routes=['/exclude-with-path-var'])
+)
 #
 # for grpc request
 channel = grpc.insecure_channel(f'localhost:{grpc_port}')
@@ -50,13 +53,14 @@ def doublehttp():
     return jsonify({}), 200
 
 
-@app.route('/excludefull', methods=['GET'])
+@app.route('/exclude-full', methods=['GET'])
 def exclude_full():
     return jsonify({}), 200
 
 
-@app.route('/excludepartial', methods=['GET'])
-def exclude_partial():
+@app.route('/exclude-with-path-var/<example_path_var>', methods=['GET'])
+def exclude_partial(example_path_var):
+    logger.info(f'Example path variable: {example_path_var}')
     return jsonify({}), 200
 
 

@@ -22,7 +22,7 @@ app = Flask('demoFlaskApp')
 
 exclude = {
     'excluded_routes': ['/excludefull'],
-    'excluded_routes_partial': ['/excludepart']
+    'excluded_routes_partial': ['/exclude-with-path-var/']
 }
 app.before_request(start_span_and_log_request_before())
 app.after_request(log_response_after())

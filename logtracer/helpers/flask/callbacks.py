@@ -55,7 +55,6 @@ def _is_path_excluded(excluded_routes, excluded_routes_partial):
     Decide if the Flask route should be traced & logged or not.
 
     Args:
-        path (str):                         Flask route being accessed
         excluded_routes ([str,]):           _full_ routes to exclude
         excluded_routes_partial ([str,]):   partial routes to explore, useful if the route has path variales,
             eg use ['/app-config/config/'] to match '/app-config/<platform>/<version>/config.json'

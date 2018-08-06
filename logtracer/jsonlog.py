@@ -103,7 +103,7 @@ def configure_json_logging(project_name, service_name, logging_format):
     _global_vars.service_name = service_name
 
     handler = logging.StreamHandler(sys.stdout)
-    formatter = LOGGING_FORMATS[logging_format]
+    formatter = LOGGING_FORMATS.get(logging_format)
     handler.setFormatter(formatter())
 
     root_logger = logging.getLogger()

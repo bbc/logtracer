@@ -52,8 +52,8 @@ def run_flask_examples():
     br()
     # Do as the first example but call endpoints which are 'excluded', these should not appear in the Trace API.
     print('Two calls to endpoints excluded from Trace API:')
-    requests.get(f'http://localhost:{flask_port}/excludefull')
-    requests.get(f'http://localhost:{flask_port}/excludepartial')
+    requests.get(f'http://localhost:{flask_port}/exclude-full')
+    requests.get(f'http://localhost:{flask_port}/exclude-with-path-var/examplepathvar1')
     print('Done')
 
     br()

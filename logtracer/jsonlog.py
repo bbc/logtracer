@@ -5,6 +5,7 @@ from datetime import datetime
 
 from pythonjsonlogger import jsonlogger
 
+import logtracer.tracing
 from logtracer import _b3, _global_vars
 
 LOG_SEVERITIES = {
@@ -18,6 +19,8 @@ LOG_SEVERITIES = {
 
 
 class StackdriverJsonFormatter(jsonlogger.JsonFormatter):
+    tracer = None
+
     def add_fields(self, log_record, record, message_dict):
         """
         Add GCP StackDriver fields (https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) to JSON logger
@@ -28,21 +31,21 @@ class StackdriverJsonFormatter(jsonlogger.JsonFormatter):
 
         gcp_log_record = {
             'severity': LOG_SEVERITIES[record.levelname],
+            'message': f'{record.name} - {record.message}',
             'time': datetime.fromtimestamp(record.created),
             'logging.googleapis.com/sourceLocation': {
                 'file': record.pathname,
                 'line': record.lineno,
                 'function': record.funcName
             },
-            'message': f'{record.name} - {record.message}'
         }
 
-        b3_values = _b3.values()
-        if b3_values.get(_b3.B3_TRACE_ID):
+        b3_values = self.tracer.get_current_span_values() if self.tracer else None
+        if b3_values:
             trace_name = f'projects/{_global_vars.gcp_project_name}/traces/{b3_values[_b3.B3_TRACE_ID]}'
             gcp_log_record.update({
                 'logging.googleapis.com/trace': trace_name,
-                'logging.googleapis.com/spanId': b3_values[_b3.B3_SPAN_ID],
+                'logging.googleapis.com/spanId': b3_values[logtracer.tracing.B3_SPAN_ID],
             })
 
         log_record.update(gcp_log_record)
@@ -50,6 +53,8 @@ class StackdriverJsonFormatter(jsonlogger.JsonFormatter):
 
 
 class LocalJsonFormatter(jsonlogger.JsonFormatter):
+    tracer = None
+
     def add_fields(self, log_record, record, message_dict):
         """
         Add GCP StackDriver fields (https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) to JSON logger
@@ -60,20 +65,20 @@ class LocalJsonFormatter(jsonlogger.JsonFormatter):
 
         json_log_record = {
             'severity': LOG_SEVERITIES[record.levelname],
+            'message': f'{record.name} - {record.message}',
             'time': datetime.fromtimestamp(record.created),
             'sourceLocation': {
                 'file': record.pathname,
                 'line': record.lineno,
                 'function': record.funcName
             },
-            'message': f'{record.name} - {record.message}'
         }
 
-        b3_values = _b3.values()
-        if b3_values.get(_b3.B3_TRACE_ID):
+        b3_values = self.tracer.get_current_span_values() if self.tracer else None
+        if b3_values.get(logtracer.tracing.B3_TRACE_ID):
             json_log_record.update({
-                'traceId': b3_values[_b3.B3_TRACE_ID],
-                'spanId': b3_values[_b3.B3_SPAN_ID]
+                'traceId': b3_values[logtracer.tracing.B3_TRACE_ID],
+                'spanId': b3_values[logtracer.tracing.B3_SPAN_ID]
             })
         log_record.update(json_log_record)
         log_record.pop('exc_info', None)
@@ -92,27 +97,29 @@ LOGGING_FORMATS = {
 }
 
 
-def configure_json_logging(project_name, service_name, logging_format):
-    """
-    Set globals and create a log record handler with a custom JSON formatter, then add it to the root logger.
+class JSONLoggerHandler:
 
-    Arguments:
-        project_name (str): name of your GCP project
-        service_name (str): name of your app
-        logging_format (str): name of platform (for log formatting)
-    """
-    _global_vars.gcp_project_name = project_name
-    _global_vars.service_name = service_name
+    def __init__(self, gcp_project_name, service_name, logging_format, tracer=None):
+        """
+        Set globals and create a log record handler with a custom JSON formatter, then add it to the root logger.
 
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = LOGGING_FORMATS.get(logging_format)
-    handler.setFormatter(formatter())
+        Arguments:
+            gcp_project_name (str): name of your GCP project
+            service_name (str): name of your app
+            logging_format (str): name of platform (for log formatting)
+        """
+        self.gcp_project_name = gcp_project_name
+        self.service_name = service_name
 
-    root_logger = logging.getLogger()
-    root_logger.handlers = []
-    root_logger.addHandler(handler)
+        handler = logging.StreamHandler(sys.stdout)
+        formatter = LOGGING_FORMATS.get(logging_format)
+        formatter.tracer = tracer
+        handler.setFormatter(formatter())
 
+        root_logger = logging.getLogger()
+        root_logger.handlers = []
+        root_logger.addHandler(handler)
 
-def get_logger(module_name):
-    """Use this function to get the logger throughout your app."""
-    return logging.getLogger(f'{_global_vars.service_name}.{module_name}')
+    def get_logger(self, module_name):
+        """Use this function to get the logger throughout your app."""
+        return logging.getLogger(f'{self.service_name}.{module_name}')

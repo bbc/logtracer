@@ -7,10 +7,9 @@ from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
 from pytest import fixture
 
 from logtracer import _global_vars
-from logtracer._b3 import B3_SPAN_ID, B3_PARENT_SPAN_ID, B3_TRACE_ID
 from logtracer.tracing import configure_tracing, StackDriverAuthError, start_traced_span, \
     end_traced_span, _post_span, generate_new_traced_subspan_values, TraceException, _truncate_str, _get_timestamp, \
-    _to_seconds_and_nanos
+    _to_seconds_and_nanos, B3_TRACE_ID, B3_PARENT_SPAN_ID, B3_SPAN_ID
 
 
 @fixture

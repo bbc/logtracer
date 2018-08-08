@@ -3,7 +3,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 from logtracer import _global_vars
-from logtracer._b3 import B3_SPAN_ID, B3_PARENT_SPAN_ID, B3_TRACE_ID
+from logtracer.tracing import B3_TRACE_ID, B3_PARENT_SPAN_ID, B3_SPAN_ID
 from logtracer.jsonlog import StackdriverJsonFormatter, LocalJsonFormatter, configure_json_logging, get_logger
 
 

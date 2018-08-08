@@ -3,5 +3,3 @@
 gcp_project_name = ''
 service_name = ''
 
-# set by tracing.configure_tracing
-post_spans_to_stackdriver_api = False

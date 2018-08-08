@@ -12,7 +12,7 @@ def log_exception(f):
 
     @functools.wraps(f)
     def wrapper(e):
-        logger = get_logger()
+        logger = get_logger(__name__)
         response = f(e)
         logger.exception(e)
         return response

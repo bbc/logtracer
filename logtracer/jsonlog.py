@@ -24,10 +24,7 @@ class StackdriverJsonFormatter(jsonlogger.JsonFormatter):
         output and remove default unused fields.
         """
 
-        if record.exc_info:
-            exception_class, exception, tb = record.exc_info
-            tb_str = "\n".join(traceback.format_tb(tb))
-            record.message = f"""Exception: {exception_class.__name__}({str(exception)})\nTraceback:\n{tb_str}"""
+        format_message_for_exception(record)
 
         gcp_log_record = {
             'severity': LOG_SEVERITIES[record.levelname],
@@ -58,10 +55,8 @@ class LocalJsonFormatter(jsonlogger.JsonFormatter):
         Add GCP StackDriver fields (https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry) to JSON logger
         output and remove default unused fields.
         """
-        if record.exc_info:
-            exception_class, exception, tb = record.exc_info
-            tb_str = "\n".join(traceback.format_tb(tb))
-            record.message = f"""Exception: {exception_class.__name__}({str(exception)})\nTraceback:\n{tb_str}"""
+
+        format_message_for_exception(record)
 
         json_log_record = {
             'severity': LOG_SEVERITIES[record.levelname],
@@ -82,6 +77,13 @@ class LocalJsonFormatter(jsonlogger.JsonFormatter):
             })
         log_record.update(json_log_record)
         log_record.pop('exc_info', None)
+
+
+def format_message_for_exception(record):
+    if record.exc_info:
+        exception_class, exception, tb = record.exc_info
+        tb_str = "\n".join(traceback.format_tb(tb))
+        record.message = f"""Exception: {exception_class.__name__}({str(exception)})\nTraceback:\n{tb_str}"""
 
 
 LOGGING_FORMATS = {

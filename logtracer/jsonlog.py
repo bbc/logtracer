@@ -113,6 +113,6 @@ def configure_json_logging(project_name, service_name, logging_format):
     root_logger.addHandler(handler)
 
 
-def get_logger():
+def get_logger(module_name):
     """Use this function to get the logger throughout your app."""
-    return logging.getLogger(_global_vars.service_name)
+    return logging.getLogger(f'{_global_vars.service_name}.{module_name}')

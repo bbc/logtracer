@@ -1,3 +1,5 @@
+import functools
+
 from flask import request
 
 from logtracer.tracing import Tracer
@@ -45,6 +47,21 @@ class FlaskTracer(Tracer):
             self.end_traced_span(not _is_path_excluded(excluded_routes, excluded_partial_routes))
 
         return execute_on_teardown
+
+    def log_exception(self, f):
+        """
+        For usage with `logtracer.helpers.flask.callbacks` - cant access exception object in callbacks if they are handled
+        by an exception handlers so add this decorator to any of your Flask exception handlers to make sure the stack
+        traces are logged.
+        """
+
+        @functools.wraps(f)
+        def wrapper(e):
+            response = f(e)
+            self._logger.exception(e)
+            return response
+
+        return wrapper
 
 
 def _is_path_excluded(excluded_routes, excluded_routes_partial):

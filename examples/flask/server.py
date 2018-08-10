@@ -2,7 +2,6 @@ import requests
 from flask import jsonify, make_response
 
 from examples.flask.flask_factory import build_app
-from logtracer.helpers.flask.decorators import log_exception
 
 # flask
 app, flask_tracer, logger_handler = build_app()
@@ -60,7 +59,7 @@ def unhandled_exception():
 
 
 @app.errorhandler(HandledException)
-@log_exception
+@flask_tracer.log_exception
 def exception_handler(e):
     logger.info('Exception handler invoked')
     return make_response(jsonify(str(e)), 500)

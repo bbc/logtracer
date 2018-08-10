@@ -32,27 +32,27 @@ def run_flask_examples():
     # and log the request. It then runs `log_response_after` logs the response code. When the request object is done
     # with, the teardown callback closes the span. Every time `end_span` is called, logs are sent to the Stackdriver
     # Trace API.
-    logger.info('Single call to Flask root endpoint:')
+    logger.info('Single call to Flask root endpoint...')
     requests.get(f'http://localhost:{flask_port}/', headers=tracer.generate_new_traced_subspan_values())
 
     # Call an endpoint so a span is created, then within that span call another endpoint and pass the tracing
     # parameters. This will create a new subspan with the same trace ID as the initial request and a new span ID will
     # be generated. Confirm this in the log outputs.
-    logger.info('Double call to Flask endpoints:')
+    logger.info('Double call to Flask endpoints...')
     requests.get(f'http://localhost:{flask_port}/doublehttp', headers=tracer.generate_new_traced_subspan_values())
 
     # Do as the first example but call endpoints which are 'excluded', these should not appear in the Trace API.
-    logger.info('Two calls to endpoints excluded from Trace API:')
+    logger.info('Two calls to endpoints excluded from Trace API...')
     requests.get(f'http://localhost:{flask_port}/exclude-full', headers=tracer.generate_new_traced_subspan_values())
     requests.get(f'http://localhost:{flask_port}/exclude-with-path-var/examplepathvar1',
                  headers=tracer.generate_new_traced_subspan_values())
 
     # Call to an endpoint in which an exception is raised and handled by a flask error handler
-    logger.info('Call to handled exception:')
+    logger.info('Call to handled exception...')
     requests.get(f'http://localhost:{flask_port}/handledexception', headers=tracer.generate_new_traced_subspan_values())
 
     # Call to an endpoint where an exception is raised and not caught by a flask error handler
-    logger.info('Call to unhandled exception:')
+    logger.info('Call to unhandled exception...')
     requests.get(f'http://localhost:{flask_port}/unhandledexception',
                  headers=tracer.generate_new_traced_subspan_values())
 

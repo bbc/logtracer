@@ -8,10 +8,15 @@ from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
 
-from logtracer import _b3
-from logtracer import _global_vars
-
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
+TRACE_LEN = 32
+SPAN_LEN = 16
+B3_TRACE_ID = 'X-B3-TraceId'
+B3_PARENT_SPAN_ID = 'X-B3-ParentSpanId'
+B3_SPAN_ID = 'X-B3-SpanId'
+B3_SAMPLED = 'X-B3-Sampled'
+B3_FLAGS = 'X-B3-Flags'
+B3_HEADERS = [B3_TRACE_ID, B3_PARENT_SPAN_ID, B3_SPAN_ID, B3_SAMPLED, B3_FLAGS]
 
 
 class TraceException(Exception):
@@ -22,13 +27,24 @@ class StackDriverAuthError(Exception):
     pass
 
 
+class SpanError(Exception):
+    pass
+
+
+class SpanNotStartedError(Exception):
+    pass
+
+
 class Tracer:
     def __init__(self, json_logger_handler, post_spans_to_stackdriver_api=False):
+
+        json_logger_handler.get_logger(__name__).root.handlers[0].formatter.tracer = self
         self.project_name = json_logger_handler.project_name
         self.service_name = json_logger_handler.service_name
         self.post_spans_to_stackdriver_api = post_spans_to_stackdriver_api
-        self.spans = {}
+        self._spans = {}
         self._logger = json_logger_handler.get_logger(__name__)
+        self._memory = None
         if self.post_spans_to_stackdriver_api:
             try:
                 self.trace_client = TraceServiceClient()
@@ -54,60 +70,92 @@ class Tracer:
             B3_FLAGS: incoming_headers.get(B3_FLAGS)
         }
 
-        self.spans[span_values[B3_SPAN_ID]] = {
+        span_id = span_values[B3_SPAN_ID]
+        self._spans[span_id] = {
             "start_timestamp": _get_timestamp(),
-            "display_name": f'{_global_vars.service_name}:{request_path}',
+            "display_name": f'{self.service_name}:{request_path}',
             "child_span_count": 0,
             "values": span_values
         }
+        self.memory.current_span_id = span_id
+
+        self._logger.debug('Span started')
+        self._logger.debug(self.current_span)
+
+    @property
+    def current_span(self):
+        try:
+            return self._spans[self.memory.current_span_id]
+        except (KeyError, AttributeError):
+            raise SpanNotStartedError('No current span found.')
+
+    def delete_current_span(self):
+        self._logger.debug(f'Deleting span {self.memory.current_span_id}')
+        del self._spans[self.memory.current_span_id]
 
     def end_traced_span(self, post_span=True):
         """
         End a b3 span and collect details about the span, then post it to the API
         (depending on the `_global_vars.post_spans_to_api` flag).
         """
-        b3_values = values()
+
+        self._logger.debug('Closing span')
+        self._logger.debug(self.current_span)
+
+        span_values = self.current_span['values']
+
         end_timestamp = _get_timestamp()
         if self.post_spans_to_stackdriver_api:
-            name = self.trace_client.span_path(_global_vars.gcp_project_name, b3_values[B3_TRACE_ID],
-                                               b3_values[B3_SPAN_ID])
+            name = self.trace_client.span_path(self.project_name, span_values[B3_TRACE_ID],
+                                               span_values[B3_SPAN_ID])
         else:
-            name = f'{_global_vars.gcp_project_name}/{b3_values[_b3.B3_TRACE_ID]}/{b3_values[_b3.B3_SPAN_ID]}'
+            name = f'{self.project_name}/{span_values[B3_TRACE_ID]}/{span_values[B3_SPAN_ID]}'
 
         span_info = {
             'name': name,
-            'span_id': b3_values[B3_SPAN_ID],
-            'display_name': _truncate_str(self.span['display_name'], limit=SPAN_DISPLAY_NAME_BYTE_LIMIT),
-            'start_time': self.span['start_timestamp'],
+            'span_id': span_values[B3_SPAN_ID],
+            'display_name': _truncate_str(self.current_span['display_name'], limit=SPAN_DISPLAY_NAME_BYTE_LIMIT),
+            'start_time': self.current_span['start_timestamp'],
             'end_time': end_timestamp,
-            'parent_span_id': b3_values[B3_PARENT_SPAN_ID],
+            'parent_span_id': span_values[B3_PARENT_SPAN_ID],
             'same_process_as_parent_span': BoolValue(value=False),
-            'child_span_count': Int32Value(value=self.span['child_span_count'])
+            'child_span_count': Int32Value(value=self.current_span['child_span_count'])
         }
         if self.post_spans_to_stackdriver_api and post_span:
             post_to_api_job = Thread(target=_post_span, args=(self.trace_client, span_info))
             post_to_api_job.start()
-        end_span()
-        self.span = None
+
+        self.delete_current_span()
 
     def generate_new_traced_subspan_values(self):
         """
         For use in a one-off downstream call. Use this to generate the values to pass to a downstream service.
+
+        Sets up new span values to contact a downstream service.
+        This is used when making a downstream service call. It returns a dict containing the required sub-span headers.
+        Each downstream call you make is handled as a new span, so call this every time you need to contact another service.
+        Entries with the value `None` are filtered out.
+
+        For the specification, see: https://github.com/openzipkin/b3-propagation
+
         """
-        if not self.span:
-            raise TraceException('Span must be started using `start_span` before creating a subspan.')
-        self.span["child_span_count"] += 1
-        return generate_new_subspan_values()
+        self.current_span["child_span_count"] += 1
+        parent_span_values = self.current_span['values']
+        subspan_values = {
+            B3_TRACE_ID: parent_span_values[B3_TRACE_ID],
+            B3_PARENT_SPAN_ID: parent_span_values[B3_SPAN_ID],
+            B3_SPAN_ID: _generate_identifier(SPAN_LEN),
+            B3_SAMPLED: parent_span_values[B3_SAMPLED],
+            B3_FLAGS: parent_span_values[B3_FLAGS]
+        }
+        subspan_values = {k: v for k, v in subspan_values.items() if v}
+        return subspan_values
 
     @property
     def memory(self):
-        # todo:
-        #   implement non thread safe memory here as class
-        #   encourage overriding in helpers, for flask use g for grpc use ???
-        #   finish merging b3 values stuff into here
-        #
-        pass
-
+        if self._memory is None:
+            self._memory = local()
+        return self._memory
 
 
 def _post_span(trace_client, span_info):
@@ -138,74 +186,6 @@ def _truncate_str(str_to_truncate, limit):
         'truncated_byte_count': len(str_bytes) - len(str_bytes[:limit]),
     }
     return trunc
-
-
-TRACE_LEN = 32
-SPAN_LEN = 16
-B3_TRACE_ID = 'X-B3-TraceId'
-B3_PARENT_SPAN_ID = 'X-B3-ParentSpanId'
-B3_SPAN_ID = 'X-B3-SpanId'
-B3_SAMPLED = 'X-B3-Sampled'
-B3_FLAGS = 'X-B3-Flags'
-B3_HEADERS = [B3_TRACE_ID, B3_PARENT_SPAN_ID, B3_SPAN_ID, B3_SAMPLED, B3_FLAGS]
-b3 = local()
-
-
-class SpanError(Exception):
-    pass
-
-
-def values():
-    """
-    Get the full current set of B3 values. If a span is not started then return null values by default.
-
-    Returns:
-        (dict): Contains the keys "X-B3-TraceId", "X-B3-ParentSpanId", "X-B3-SpanId", "X-B3-Sampled" and
-                "X-B3-Flags" for the current span or subspan. NB some of the values are likely be None, but
-                all keys will be present.
-    """
-    default = {
-        B3_TRACE_ID: None,
-        B3_PARENT_SPAN_ID: None,
-        B3_SPAN_ID: None,
-        B3_SAMPLED: None,
-        B3_FLAGS: None
-    }
-    return default if not hasattr(b3, 'span') else b3.span
-
-
-def end_span():
-    """Closes the span by deleting the span values from the thread memory."""
-    if not hasattr(b3, "span"):
-        raise SpanError('`end_span` must be called after `start_span`')
-    del b3.span
-
-
-def generate_new_subspan_values():
-    """
-    Sets up new span values to contact a downstream service.
-    This is used when making a downstream service call. It returns a dict containing the required sub-span headers.
-    Each downstream call you make is handled as a new span, so call this every time you need to contact another service.
-    Entries with the value `None` are filtered out.
-
-    For the specification, see: https://github.com/openzipkin/b3-propagation
-
-    Returns:
-         (dict): contains header values for a downstream request. This can be passed directly to e.g. requests.get(...).
-    """
-    if not hasattr(b3, 'span'):
-        raise SpanError('`generate_new_subspan_values` must be called after `start_span`')
-
-    parent_values = values()
-    subspan_values = {
-        B3_TRACE_ID: parent_values[B3_TRACE_ID],
-        B3_PARENT_SPAN_ID: parent_values[B3_SPAN_ID],
-        B3_SPAN_ID: _generate_identifier(SPAN_LEN),
-        B3_SAMPLED: parent_values[B3_SAMPLED],
-        B3_FLAGS: parent_values[B3_FLAGS]
-    }
-    subspan_values = {k: v for k, v in subspan_values.items() if v}
-    return subspan_values
 
 
 def _generate_identifier(identifier_length):

@@ -15,7 +15,7 @@ class FlaskTracer(Tracer):
 
         def execute_before_request():
             self.start_traced_span(request.headers, request.path)
-            self._logger.info(f'{request.method} - {request.url}')
+            self.logger.info(f'{request.method} - {request.url}')
 
         return execute_before_request
 
@@ -29,9 +29,9 @@ class FlaskTracer(Tracer):
         def execute_after_request(response):
             status = str(response.status_code)
             if status[0] in ['4', '5']:
-                self._logger.error(f'{response.status} - {request.url}')
+                self.logger.error(f'{response.status} - {request.url}')
             else:
-                self._logger.info(f'{response.status} - {request.url}')
+                self.logger.info(f'{response.status} - {request.url}')
             return response
 
         return execute_after_request
@@ -44,7 +44,7 @@ class FlaskTracer(Tracer):
         """
 
         def execute_on_teardown(_):
-            self.end_traced_span(not _is_path_excluded(excluded_routes, excluded_partial_routes))
+            self.end_traced_span(_is_path_excluded(excluded_routes, excluded_partial_routes))
 
         return execute_on_teardown
 
@@ -58,7 +58,7 @@ class FlaskTracer(Tracer):
         @functools.wraps(f)
         def wrapper(e):
             response = f(e)
-            self._logger.exception(e)
+            self.logger.exception(e)
             return response
 
         return wrapper

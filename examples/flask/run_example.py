@@ -10,12 +10,9 @@ project_name = 'bbc-connected-data'
 service_name = 'demoApp'
 
 logger_handler = JSONLoggerHandler(project_name, service_name, 'local')
-
-tracer = Tracer(logger_handler, post_spans_to_stackdriver_api=False)
-tracer.set_logging_level('DEBUG')
-
 logger = logger_handler.get_logger(__name__)
 logger.setLevel('DEBUG')
+
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('google.auth.transport.requests').setLevel(logging.WARNING)
 logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
@@ -25,8 +22,6 @@ logging.getLogger('b3').setLevel(logging.WARNING)
 # These demos illustrate simple calls to a Flask and gRPC server as well as a call from a Flask server to a gRPC
 # server.
 def run_flask_examples():
-    tracer.start_traced_span({}, 'run_examples')
-
     # Call the root endpoint of the Flask server. On receiving the request, the server will run `start_span_and_log_
     # request_before` which will start a span. This generates both a 32 character trace ID and a 16 character span ID
     # and log the request. It then runs `log_response_after` logs the response code. When the request object is done
@@ -56,8 +51,13 @@ def run_flask_examples():
     requests.get(f'http://localhost:{flask_port}/unhandledexception',
                  headers=tracer.generate_new_traced_subspan_values())
 
-    tracer.end_traced_span(post_span=False)
-
 
 if __name__ == '__main__':
+    tracer = Tracer(logger_handler, post_spans_to_stackdriver_api=False)
+    tracer.set_logging_level('DEBUG')
+
+    tracer.start_traced_span({}, 'run_examples')
+
     run_flask_examples()
+
+    tracer.end_traced_span(exclude_from_posting=False)

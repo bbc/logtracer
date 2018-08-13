@@ -1,15 +1,25 @@
-import logging
 import time
 from concurrent import futures
 
 import grpc
 
 from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
-from logtracer.helpers.grpc.decorators import trace_all_calls
+from logtracer.helpers.grpc.interceptors import GRPCTracer
+from logtracer.jsonlog import JSONLoggerHandler
 
 ONE_DAY_IN_SECONDS = 60 * 60 * 24
-logger = logging.getLogger('demoGRPCLogger')
+
+project_name = 'bbc-connected-data'
+service_name = 'demoApp'
+
+logger_handler = JSONLoggerHandler(project_name, service_name, 'local')
+
+grpc_tracer = GRPCTracer(logger_handler, post_spans_to_stackdriver_api=False)
+grpc_tracer.set_logging_level('DEBUG')
+
+logger = logger_handler.get_logger('demoGRPCLogger')
 logger.setLevel('DEBUG')
+
 grpc_port = 50055
 
 
@@ -44,24 +54,37 @@ def handle_exception_for_all_methods():
 
 
 @handle_exception_for_all_methods()
-@trace_all_calls(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
 class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
     def DemoRPC(self, request, context):
+        logger.info('Demo Empty RPC call')
+        time.sleep(2)
+        logger.info('Call done')
         return grpc_demo_pb2.EmptyMessage()
 
     def DemoRPCHandledException(self, request, context):
+        logger.info('Demo Handled Exception RPC call')
+        time.sleep(2)
         raise HandledException('This is a handled exception!')
 
     def DemoRPCUnHandledException(self, request, context):
+        logger.info('Demo Unhandled Exception RPC call')
+        time.sleep(2)
         raise UnhandledException('This is an unhandled exception!')
 
     # @trace_call(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
     def DemoRPCRedactedParameters(self, request, context):
+        logger.info('Demo RPC call with redacted parameters')
+        time.sleep(2)
+        logger.info('Call done')
         return grpc_demo_pb2.EmptyMessage()
 
 
 def create_server(grpc_port):
-    server = grpc.server(futures.ThreadPoolExecutor())
+    interceptor = grpc_tracer.incoming_server_interceptor()
+    server = grpc.server(
+        futures.ThreadPoolExecutor(),
+        interceptors=(interceptor,)
+    )
     grpc_demo_pb2_grpc.add_DemoServiceServicer_to_server(DemoRPC(), server)
     server.add_insecure_port(f'[::]:{grpc_port}')
     server.start()
@@ -76,3 +99,7 @@ def run_grpc_server():
             time.sleep(ONE_DAY_IN_SECONDS)
     except KeyboardInterrupt:
         server.stop(0)
+
+
+if __name__ == '__main__':
+    run_grpc_server()

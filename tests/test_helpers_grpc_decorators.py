@@ -2,7 +2,8 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-from logtracer.helpers.grpc.decorators import _rsetattr, _rgetattr, redact_request, trace_call, trace_all_calls
+from logtracer.helpers.grpc.decorators import trace_call, trace_all_calls
+from logtracer.helpers.grpc.redact import _rsetattr, _rgetattr, redact_request
 
 
 def test_rsetattr():

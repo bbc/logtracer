@@ -38,12 +38,12 @@ class SpanNotStartedError(Exception):
 class Tracer:
     def __init__(self, json_logger_handler, post_spans_to_stackdriver_api=False):
 
-        json_logger_handler.get_logger(__name__).root.handlers[0].formatter.tracer = self
+        self._add_tracer_to_logger_formatter(json_logger_handler)
         self.project_name = json_logger_handler.project_name
         self.service_name = json_logger_handler.service_name
         self.post_spans_to_stackdriver_api = post_spans_to_stackdriver_api
         self._spans = {}
-        self._logger = json_logger_handler.get_logger(__name__)
+        self.logger = json_logger_handler.get_logger(__name__)
         self._memory = None
         if self.post_spans_to_stackdriver_api:
             try:
@@ -51,8 +51,11 @@ class Tracer:
             except DefaultCredentialsError:
                 raise StackDriverAuthError('Cannot post spans to API, no authentication credentials found.')
 
+    def _add_tracer_to_logger_formatter(self, json_logger_handler):
+        json_logger_handler.get_logger(__name__).root.handlers[0].formatter.tracer = self
+
     def set_logging_level(self, level):
-        self._logger.setLevel(level)
+        self.logger.setLevel(level)
 
     def start_traced_span(self, incoming_headers, request_path):
         """
@@ -79,8 +82,7 @@ class Tracer:
         }
         self.memory.current_span_id = span_id
 
-        self._logger.debug('Span started')
-        self._logger.debug(self.current_span)
+        self.logger.debug(f'Span started {self.current_span}')
 
     @property
     def current_span(self):
@@ -90,17 +92,16 @@ class Tracer:
             raise SpanNotStartedError('No current span found.')
 
     def delete_current_span(self):
-        self._logger.debug(f'Deleting span {self.memory.current_span_id}')
+        self.logger.debug(f'Deleting span {self.memory.current_span_id}')
         del self._spans[self.memory.current_span_id]
 
-    def end_traced_span(self, post_span=True):
+    def end_traced_span(self, exclude_from_posting=False):
         """
         End a b3 span and collect details about the span, then post it to the API
         (depending on the `_global_vars.post_spans_to_api` flag).
         """
 
-        self._logger.debug('Closing span')
-        self._logger.debug(self.current_span)
+        self.logger.debug(f'Closing span {self.current_span}')
 
         span_values = self.current_span['values']
 
@@ -121,7 +122,7 @@ class Tracer:
             'same_process_as_parent_span': BoolValue(value=False),
             'child_span_count': Int32Value(value=self.current_span['child_span_count'])
         }
-        if self.post_spans_to_stackdriver_api and post_span:
+        if self.post_spans_to_stackdriver_api and not exclude_from_posting:
             post_to_api_job = Thread(target=_post_span, args=(self.trace_client, span_info))
             post_to_api_job.start()
 

@@ -14,7 +14,11 @@ service_name = 'demoApp'
 
 logger_handler = JSONLoggerHandler(project_name, service_name, 'local')
 
-grpc_tracer = GRPCTracer(logger_handler, post_spans_to_stackdriver_api=False)
+grpc_tracer = GRPCTracer(
+    logger_handler,
+    post_spans_to_stackdriver_api=False,
+    redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1']
+)
 grpc_tracer.set_logging_level('DEBUG')
 
 logger = logger_handler.get_logger('demoGRPCLogger')

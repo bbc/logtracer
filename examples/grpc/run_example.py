@@ -70,8 +70,7 @@ if __name__ == '__main__':
 
     tracer = GRPCTracer(
         logger_handler,
-        post_spans_to_stackdriver_api=False,
-        redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1']
+        post_spans_to_stackdriver_api=False
     )
 
     channel = grpc.insecure_channel(f'localhost:{grpc_port}')

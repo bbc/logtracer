@@ -4,12 +4,32 @@
 ## Examples
 Examples for a Flask and a gRPC service exist in the [examples](examples) directory.
 
+TODO: running instructions
+
 ## Usage
 ### Pre Setup
 Install: `pip install git+https://github.com/bbc/logtracer@[BRANCH or COMMIT_HASH or TAG_NAME]`.
 It is good practise to pin the version or your code may break if this package is updated.
 
+change structure
+
+### Enable JSON l=Logging
+
+### Enable JSON Logging in Stackdriver Format
+
+### Configure Tracing 
+
+Three ways:
+- `FlaskTracer` class
+- `gRPCTracer` class
+- `Tracer` class
+
+
+
 ### Logging
+
+TODO: rewrite this
+
 Before writing any logs, the `configure_json_logging` command must be ran _once_ per package.
 There are two formatters available for usage with logging, `local` and `stackdriver`, described further in the [Purpose](#purpose) section.
 It is advisable to set this using an environmental variable, as below:
@@ -25,6 +45,9 @@ logger.setLevel('INFO')
 Once this is configured, use `logtracing.jsonlog.get_logger` to retrieve the logger elsewhere in your code. 
 
 ### Tracing
+
+TODO: rewrite this
+
 By default tracing functionality is disabled - tracing IDs will not show in the logs and nothing will be posted to the Stackdriver Trace API.
 There are three steps to enabling tracing:
 #### 1. Configure Tracing
@@ -46,6 +69,9 @@ If `post_spans_to_stackdriver_api` is set to `True`, and GCP Credentials are not
 If you deploying to a Kubernetes container, then it should automatically pick up the GCP credentials. 
 
 #### 2. Create Spans
+
+
+
 Running `configure_tracing` alone will _not_ show any tracing information. To add traces, requests must be handled inside a span.
 Any log entries written inside a span will have the span's `trace id` and `span id` attached. 
 ```python

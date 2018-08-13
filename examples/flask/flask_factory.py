@@ -1,6 +1,6 @@
 from flask import Flask
 
-from logtracer.helpers.flask.flask_tracer import FlaskTracer
+from logtracer.helpers.flask.flask_tracing import FlaskTracer
 from logtracer.jsonlog import JSONLoggerHandler
 
 

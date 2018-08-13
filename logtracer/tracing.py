@@ -1,8 +1,10 @@
 import os
 import time
 from binascii import hexlify
+from copy import deepcopy
 from threading import Thread, local
 
+import requests
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -153,10 +155,33 @@ class Tracer:
         return subspan_values
 
     @property
+    def requests(self):
+        return RequestsWrapper(self)
+
+    @property
     def memory(self):
         if self._memory is None:
             self._memory = local()
         return self._memory
+
+
+class RequestsWrapper:
+    def __init__(self, tracer):
+        self.tracer = tracer
+        request_methods = [method for method in dir(requests.api) if not method.startswith('_')]
+
+        def wrapped_request(method):
+            def wrapper(*args, **kwargs):
+                headers = deepcopy(kwargs.get('headers', {}))
+                headers.update(self.tracer.generate_new_traced_subspan_values())
+                kwargs['headers'] = headers
+                return getattr(requests,method)(*args, **kwargs)
+            return wrapper
+
+        for method in request_methods:
+            setattr(self, method, wrapped_request(method))
+
+
 
 
 def _post_span(trace_client, span_info):

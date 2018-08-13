@@ -21,7 +21,7 @@ def index():
 @app.route('/doublehttp', methods=['GET'])
 def doublehttp():
     logger.info('Calling root endpoint...')
-    requests.get(f'http://localhost:{flask_port}', headers=flask_tracer.generate_new_traced_subspan_values())
+    flask_tracer.requests.get(f'http://localhost:{flask_port}')
     logger.info('Done')
     return jsonify({}), 200
 

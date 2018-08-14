@@ -115,21 +115,23 @@ class Tracer:
     @property
     def current_span(self):
         """Attempt to return current span data."""
-        try:
-            return self._spans[self.memory.current_span_id]
-        except (KeyError, AttributeError):
-            raise SpanNotStartedError('No current span found.')
+        if self.memory.current_span_id is not None:
+            try:
+                return self._spans[self.memory.current_span_id]
+            except KeyError:
+                pass
+        raise SpanNotStartedError('No current span found.')
 
     def start_traced_subspan(self, request_path):
         """Start a traced subspan, for usage with wrapping an unsupported downstream service."""
-        self.memory.parent_span_id = self.memory.current_span_id
+
+        self.memory.parent_spans.append(self.memory.current_span_id)
         self.start_traced_span(self.generate_new_traced_subspan_values(), request_path)
 
     def end_traced_subspan(self, exclude_from_posting=False):
         """Close a traced subspan."""
         self.end_traced_span(exclude_from_posting)
-        self.memory.current_span_id = self.memory.parent_span_id
-        del self.memory.parent_span_id
+        self.memory.current_span_id = self.memory.parent_spans.pop()
 
     def end_traced_span(self, exclude_from_posting=False):
         """
@@ -169,7 +171,7 @@ class Tracer:
         """Deletes span details."""
         self.logger.debug(f'Deleting span {self.memory.current_span_id}')
         del self._spans[self.memory.current_span_id]
-        del self.memory.current_span_id
+        self.memory.current_span_id = None
 
     def generate_new_traced_subspan_values(self):
         """
@@ -202,6 +204,8 @@ class Tracer:
         """
         if self._memory is None:
             self._memory = local()
+            self._memory.current_span_id = None
+            self._memory.parent_spans = []
         return self._memory
 
 

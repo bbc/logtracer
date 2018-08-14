@@ -56,8 +56,6 @@ Initialise the Tracer class _once_ in your app, and it is recommended you do it 
 from app.log import logger_factory
 from logtracer.tracing import Tracer
 
-...
-
 enable_trace_posting = os.getenv('ENABLE_TRACE_POSTING', 'false') == 'true'
 tracer = Tracer(logger_factory, post_spans_to_stackdriver_api=enable_trace_posting)
 tracer.set_logging_level('DEBUG') # 'INFO' recommended in production

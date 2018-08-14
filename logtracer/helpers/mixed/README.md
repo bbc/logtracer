@@ -16,7 +16,6 @@ import os
 from app.log import logger_factory
 from logtracer.helpers.mixed.tracer import MixedTracer
 
-...
 
 enable_trace_posting = os.getenv('ENABLE_TRACE_POSTING', 'false') == 'true'
 tracer = MixedTracer(logger_factory, post_spans_to_stackdriver_api=enable_trace_posting)

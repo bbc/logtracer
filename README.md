@@ -69,15 +69,18 @@ logger = logger_factory.get_logger(__name__)
 
 logger.info('Outside of span')
 
-tracer.start_traced_span(headers, 'example-path')
+tracer.start_traced_span(headers, 'example-span')
+logger.info('In span')
 
-logger.info('Make traced request in span')
-tracer.requests.get('http://example-url.com')
+tracer.start_traced_subspan('example-sub-span')
+logger.info('In sub span')
 
-tracer.start_traced_subspan('example-sub-path')
+tracer.start_traced_subspan('example-sub-sub-span')
+logger.info('In sub sub span')
 
-logger.info('Make traced request in subspan')
-tracer.requests.get('http://example-url2.com')
+tracer.requests.get('http://example-traced-get.com')
+
+tracer.end_traced_subspan(exclude_from_posting=False)
 
 tracer.end_traced_subspan(exclude_from_posting=False)
 
@@ -96,14 +99,13 @@ from logtracer.tracing import SpanContext, SubSpanContext
 logger = logger_factory.get_logger(__name__)
 
 logger.info('Outside of span')
-with SpanContext(tracer, headers, 'example-path'):
-
-    logger.info('Make traced request in span')
-    tracer.requests.get('http://example-url.com')
-    
-    with SubSpanContext(tracer, 'example-sub-path'):
-        logger.info('Make traced request in subspan')
-        tracer.requests.get('http://example-url2.com')
+with SpanContext(tracer, headers, 'example-span'):
+    logger.info('In span')
+    with SubSpanContext(tracer, 'example-sub-span'):
+        logger.info('In sub span')
+        with SubSpanContext(tracer, 'example-sub-sub-span'):
+            logger.info('In sub sub span')
+            tracer.requests.get('http://example-traced-get.com')
 
 ```
 The `Tracer` class (and therefore the `FlaskTracer` and `GRPCTracer` class) has a `requests` property. This wraps the standard

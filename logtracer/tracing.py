@@ -84,14 +84,14 @@ class Tracer:
         """
         self.logger.setLevel(level)
 
-    def start_traced_span(self, incoming_headers, request_path):
+    def start_traced_span(self, incoming_headers, span_name):
         """
         Create a span and set it as the current span in the thread local memory.
         Retrieves span details from inbound call, otherwise generates new values.
 
         Arguments:
             incoming_headers: Incoming request headers. These could be http, or part of a GRPC message.
-            request_path (str): Path of the endpoint of the incoming request.
+            span_name (str): Path of the endpoint of the incoming request.
         """
         span_values = {
             B3_TRACE_ID: incoming_headers.get(B3_TRACE_ID) or _generate_identifier(TRACE_LEN),
@@ -104,7 +104,7 @@ class Tracer:
         span_id = span_values[B3_SPAN_ID]
         self._spans[span_id] = {
             "start_timestamp": _get_timestamp(),
-            "display_name": f'{self.service_name}:{request_path}',
+            "display_name": f'{self.service_name}:{span_name}',
             "child_span_count": 0,
             "values": span_values
         }
@@ -122,11 +122,11 @@ class Tracer:
                 pass
         raise SpanNotStartedError('No current span found.')
 
-    def start_traced_subspan(self, request_path):
+    def start_traced_subspan(self, span_name):
         """Start a traced subspan, for usage with wrapping an unsupported downstream service."""
 
         self.memory.parent_spans.append(self.memory.current_span_id)
-        self.start_traced_span(self.generate_new_traced_subspan_values(), request_path)
+        self.start_traced_span(self.generate_new_traced_subspan_values(), span_name)
 
     def end_traced_subspan(self, exclude_from_posting=False):
         """Close a traced subspan."""

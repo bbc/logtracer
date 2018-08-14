@@ -8,12 +8,12 @@ from examples.grpc.resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, Nes
 from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc.server import grpc_port
 from logtracer.helpers.grpc.interceptors import GRPCTracer
-from logtracer.jsonlog import JSONLoggerHandler
+from logtracer.jsonlog import JSONLoggerFactory
 
 project_name = 'bbc-connected-data'
 service_name = 'demoApp'
 
-logger_handler = JSONLoggerHandler(project_name, service_name, 'local')
+logger_handler = JSONLoggerFactory(project_name, service_name, 'local')
 
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('google.auth.transport.requests').setLevel(logging.WARNING)
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     )
 
     channel = grpc.insecure_channel(f'localhost:{grpc_port}')
-    intercept_channel = grpc.intercept_channel(channel, tracer.outgoing_client_interceptor())
+    intercept_channel = grpc.intercept_channel(channel, tracer.client_interceptor())
     stub = DemoServiceStub(intercept_channel)
 
     tracer.set_logging_level('DEBUG')

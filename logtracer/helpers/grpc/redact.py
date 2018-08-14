@@ -3,11 +3,13 @@ import functools
 
 
 def _rsetattr(obj, attr, val):
+    """Set nested attributes."""
     pre, _, post = attr.rpartition('.')
     return setattr(_rgetattr(obj, pre) if pre else obj, post, val)
 
 
 def _rgetattr(obj, attr, *args):
+    """Get nested attributes."""
     def _getattr(obj, attr):
         return getattr(obj, attr, *args)
 

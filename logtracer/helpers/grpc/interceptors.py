@@ -12,27 +12,31 @@ B3_VALUE_KEY = 'b3-values'
 
 class GRPCTracer(Tracer):
 
-    def __init__(self, json_logger_handler, post_spans_to_stackdriver_api=False, redacted_fields=None):
-        super().__init__(json_logger_handler, post_spans_to_stackdriver_api)
+    def __init__(self, json_logger_factory, post_spans_to_stackdriver_api=False, redacted_fields=None):
+        """Class to manage gRPC client and server interceptors."""
+        super().__init__(json_logger_factory, post_spans_to_stackdriver_api)
         self.redacted_fields = redacted_fields if redacted_fields is not None else []
 
-    def incoming_server_interceptor(self):
+    def server_interceptor(self):
         return _IncomingInterceptor(self)
 
-    def outgoing_client_interceptor(self):
+    def client_interceptor(self):
         return _OutgoingInterceptor(self)
 
 
 class _IncomingInterceptor(grpc.ServerInterceptor):
 
     def __init__(self, tracer):
+        """Initialise interceptor with tracer instance."""
         self._tracer = tracer
 
     def intercept_service(self, continuation, handler_call_details):
+        """Intercept request and modify behaviour to log and trace inbound and outbound connections to the server."""
+
         def tracing_wrapper(behavior, *_):
             def new_behaviour(request, servicer_context):
 
-                b3_values = self._retrieve_b3_values_from_incoming_call(handler_call_details)
+                b3_values = self._retrieve_span_values_from_incoming_call(handler_call_details)
 
                 self._tracer.start_traced_span(b3_values, handler_call_details.method)
                 redacted_request_str = f"\nrequest: {redact_request(request, self._tracer.redacted_fields)}" \
@@ -63,7 +67,8 @@ class _IncomingInterceptor(grpc.ServerInterceptor):
         return _wrap_rpc_behavior(continuation(handler_call_details), tracing_wrapper)
 
     @staticmethod
-    def _retrieve_b3_values_from_incoming_call(handler_call_details):
+    def _retrieve_span_values_from_incoming_call(handler_call_details):
+        """Get the span values from an inbound call."""
         b3_values = {}
         for metadatum in handler_call_details.invocation_metadata:
             if metadatum.key == B3_VALUE_KEY:
@@ -77,6 +82,7 @@ class _OutgoingInterceptor(grpc.UnaryUnaryClientInterceptor):
         self._tracer = tracer
 
     def intercept_unary_unary(self, continuation, client_call_details, request):
+        """Attach span values to an outbound gRPC call and log the call and response."""
         self._tracer.logger.info(f'{client_call_details.method} - outbound gRPC call')
 
         metadata = self._generate_metadata_with_b3_values(client_call_details)
@@ -89,11 +95,15 @@ class _OutgoingInterceptor(grpc.UnaryUnaryClientInterceptor):
         )
 
         response_future = continuation(client_call_details, request)
-        response_future.result()
-        self._tracer.logger.info(f'Response received from {client_call_details.method}.')
+        response_future.result()  # waits for response
+        self._tracer.logger.info(f'Response received from {client_call_details.method}')
         return response_future
 
     def _generate_metadata_with_b3_values(self, client_call_details):
+        """
+        Given the immutable metadata from the client call, get the existing metadata and create a new list of
+        metadata with the span values metadatum appended.
+        """
         subspan_values = self._tracer.generate_new_traced_subspan_values()
         metadata = []
         if client_call_details.metadata is not None:
@@ -104,6 +114,7 @@ class _OutgoingInterceptor(grpc.UnaryUnaryClientInterceptor):
 
 
 def _grpc_status_from_context(servicer_context):
+    """Get the status of a gRPC response as a string from the servicer context."""
     if servicer_context._state.code is not None:
         return f" - {servicer_context._state.code} - {str(servicer_context._state.details)}"
     else:
@@ -111,6 +122,7 @@ def _grpc_status_from_context(servicer_context):
 
 
 def _wrap_rpc_behavior(handler, fn):
+    """Helper function to wrap the RPC handler, allowing the request and context to be accessed."""
     behavior_fn = handler.unary_unary
     handler_factory = grpc.unary_unary_rpc_method_handler
 

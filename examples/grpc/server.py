@@ -5,14 +5,14 @@ import grpc
 
 from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
 from logtracer.helpers.grpc.interceptors import GRPCTracer
-from logtracer.jsonlog import JSONLoggerHandler
+from logtracer.jsonlog import JSONLoggerFactory
 
 ONE_DAY_IN_SECONDS = 60 * 60 * 24
 
 project_name = 'bbc-connected-data'
 service_name = 'demoApp'
 
-logger_handler = JSONLoggerHandler(project_name, service_name, 'local')
+logger_handler = JSONLoggerFactory(project_name, service_name, 'local')
 
 grpc_tracer = GRPCTracer(
     logger_handler,
@@ -84,7 +84,7 @@ class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
 
 
 def create_server(grpc_port):
-    interceptor = grpc_tracer.incoming_server_interceptor()
+    interceptor = grpc_tracer.server_interceptor()
     server = grpc.server(
         futures.ThreadPoolExecutor(),
         interceptors=(interceptor,)

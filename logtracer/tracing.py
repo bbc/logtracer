@@ -10,6 +10,8 @@ from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
 
+from logtracer.exceptions import StackDriverAuthError, SpanNotStartedError
+
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
 TRACE_LEN = 32
 SPAN_LEN = 16
@@ -21,47 +23,71 @@ B3_FLAGS = 'X-B3-Flags'
 B3_HEADERS = [B3_TRACE_ID, B3_PARENT_SPAN_ID, B3_SPAN_ID, B3_SAMPLED, B3_FLAGS]
 
 
-class TraceException(Exception):
-    pass
-
-
-class StackDriverAuthError(Exception):
-    pass
-
-
-class SpanError(Exception):
-    pass
-
-
-class SpanNotStartedError(Exception):
-    pass
-
-
 class Tracer:
-    def __init__(self, json_logger_handler, post_spans_to_stackdriver_api=False):
+    def __init__(self, json_logger_factory, post_spans_to_stackdriver_api=False):
+        """
+        Class to manage creation and deletion of spans. This should be initialised once within an app then reused
+        across it.
 
-        self._add_tracer_to_logger_formatter(json_logger_handler)
-        self.project_name = json_logger_handler.project_name
-        self.service_name = json_logger_handler.service_name
-        self.post_spans_to_stackdriver_api = post_spans_to_stackdriver_api
+        Arguments:
+            json_logger_factory (logtracer.jsonlog.JSONLoggerFactory):
+                logger factory instance to attach for logging tracing events.
+            post_spans_to_stackdriver_api (bool):
+                toggle for posting spans to the Stackdriver API (requires google credentials)
+
+        Attributes:
+            self.project_name (str): Name of your project, the GCP project name if posting to Stackdriver Trace
+            self.service_name (str): Name of your service
+            self.logger (logging.Logger): Logger to be used to log trace-related events
+            self.requests (logtracer.tracing.RequestsWrapper):
+                a wrapper for the `requests` library to conveniently trace outgoing requests
+
+            self._spans (dict): dict to store span information indexed by span id
+            self._memory (threading.local()): thread local memory to store the current span ID
+            self._post_spans_to_stackdriver_api (bool): toggle for posting spans to Stackdriver API
+
+
+        """
+        self.project_name = json_logger_factory.project_name
+        self.service_name = json_logger_factory.service_name
+        self.logger = json_logger_factory.get_logger(__name__)
+        self.requests = RequestsWrapper(self)
+
         self._spans = {}
-        self.logger = json_logger_handler.get_logger(__name__)
         self._memory = None
-        if self.post_spans_to_stackdriver_api:
+        self._post_spans_to_stackdriver_api = post_spans_to_stackdriver_api
+
+        self._add_tracer_to_logger_formatter(json_logger_factory)
+        self._verify_gcp_credentials()
+
+    def _verify_gcp_credentials(self):
+        """If the flag is enabled then attempt to load the trace client used for posting spans to the Trace API."""
+        if self._post_spans_to_stackdriver_api:
             try:
                 self.trace_client = TraceServiceClient()
             except DefaultCredentialsError:
                 raise StackDriverAuthError('Cannot post spans to API, no authentication credentials found.')
 
     def _add_tracer_to_logger_formatter(self, json_logger_handler):
-        json_logger_handler.get_logger(__name__).root.handlers[0].formatter.tracer = self
+        """Add this instance to the logging formatter to allow the logger to format logs with trace information."""
+        json_logger_handler.get_logger().root.handlers[0].formatter.tracer = self
 
     def set_logging_level(self, level):
+        """
+        Set the logging level of the tracer
+
+        level (str):
+            'DEBUG': Span creation, closure, and deletion information (not useful in production)
+            'INFO': Request logging, used by child classes to log incoming and outgoing requests
+            'ERROR': Summaries of any errors that have occurred
+            'EXCEPTION': Stack traces of any exceptions to have occurred
+        """
         self.logger.setLevel(level)
 
     def start_traced_span(self, incoming_headers, request_path):
         """
-        Start a b3 span and keep track of extra details for tracing.
+        Create a span and set it as the current span in the thread local memory.
+        Retrieves span details from inbound call, otherwise generates new values.
 
         Arguments:
             incoming_headers: Incoming request headers. These could be http, or part of a GRPC message.
@@ -88,14 +114,22 @@ class Tracer:
 
     @property
     def current_span(self):
+        """Attempt to return current span data."""
         try:
             return self._spans[self.memory.current_span_id]
         except (KeyError, AttributeError):
             raise SpanNotStartedError('No current span found.')
 
-    def delete_current_span(self):
-        self.logger.debug(f'Deleting span {self.memory.current_span_id}')
-        del self._spans[self.memory.current_span_id]
+    def start_traced_subspan(self, request_path):
+        """Start a traced subspan, for usage with wrapping an unsupported downstream service."""
+        self.memory.parent_span_id = self.memory.current_span_id
+        self.start_traced_span(self.generate_new_traced_subspan_values(), request_path)
+
+    def end_traced_subspan(self, exclude_from_posting=False):
+        """Close a traced subspan."""
+        self.end_traced_span(exclude_from_posting)
+        self.memory.current_span_id = self.memory.parent_span_id
+        del self.memory.parent_span_id
 
     def end_traced_span(self, exclude_from_posting=False):
         """
@@ -108,7 +142,7 @@ class Tracer:
         span_values = self.current_span['values']
 
         end_timestamp = _get_timestamp()
-        if self.post_spans_to_stackdriver_api:
+        if self._post_spans_to_stackdriver_api:
             name = self.trace_client.span_path(self.project_name, span_values[B3_TRACE_ID],
                                                span_values[B3_SPAN_ID])
         else:
@@ -124,23 +158,28 @@ class Tracer:
             'same_process_as_parent_span': BoolValue(value=False),
             'child_span_count': Int32Value(value=self.current_span['child_span_count'])
         }
-        if self.post_spans_to_stackdriver_api and not exclude_from_posting:
+        if self._post_spans_to_stackdriver_api and not exclude_from_posting:
             post_to_api_job = Thread(target=_post_span, args=(self.trace_client, span_info))
             post_to_api_job.start()
 
-        self.delete_current_span()
+        self._delete_current_span()
+
+    def _delete_current_span(self):
+        """Deletes span details."""
+        self.logger.debug(f'Deleting span {self.memory.current_span_id}')
+        del self._spans[self.memory.current_span_id]
+        del self.memory.current_span_id
 
     def generate_new_traced_subspan_values(self):
         """
-        For use in a one-off downstream call. Use this to generate the values to pass to a downstream service.
+        For use in a downstream/outbound call. Use this to generate the values to pass to a downstream service.
 
-        Sets up new span values to contact a downstream service.
-        This is used when making a downstream service call. It returns a dict containing the required sub-span headers.
-        Each downstream call you make is handled as a new span, so call this every time you need to contact another service.
+        If sending outbound requests to a HTTP service using the `requests` library, then use the `self.requests`
+        wrapper instead of this function to trace outgoing requests.
+        If calling a gRPC service then use the channel interceptor (logtracer.helpers.grpc.interceptors.GRPCTracer)
+        instead of this function.
+
         Entries with the value `None` are filtered out.
-
-        For the specification, see: https://github.com/openzipkin/b3-propagation
-
         """
         self.current_span["child_span_count"] += 1
         parent_span_values = self.current_span['values']
@@ -155,11 +194,11 @@ class Tracer:
         return subspan_values
 
     @property
-    def requests(self):
-        return RequestsWrapper(self)
-
-    @property
     def memory(self):
+        """
+        Thread local memory for storring the _current_ span, needed for if this class is used in a multi-threaded
+        environment.
+        """
         if self._memory is None:
             self._memory = local()
         return self._memory
@@ -167,6 +206,7 @@ class Tracer:
 
 class RequestsWrapper:
     def __init__(self, tracer):
+        """Wraps the requests library to automatically attach tracing information to outgoing headers."""
         self.tracer = tracer
         request_methods = [method for method in dir(requests.api) if not method.startswith('_')]
 
@@ -175,13 +215,12 @@ class RequestsWrapper:
                 headers = deepcopy(kwargs.get('headers', {}))
                 headers.update(self.tracer.generate_new_traced_subspan_values())
                 kwargs['headers'] = headers
-                return getattr(requests,method)(*args, **kwargs)
+                return getattr(requests, method)(*args, **kwargs)
+
             return wrapper
 
         for method in request_methods:
             setattr(self, method, wrapped_request(method))
-
-
 
 
 def _post_span(trace_client, span_info):

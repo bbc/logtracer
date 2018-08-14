@@ -4,7 +4,8 @@ import pytest
 from pytest import mark
 
 from logtracer.helpers.flask.flask_tracing import start_span_and_log_request_before, log_response_after, \
-    close_span_and_post_on_teardown, _is_path_excluded
+    close_span_and_post_on_teardown
+from logtracer.helpers.flask.path_exclusion import _is_path_excluded
 
 
 @patch('logtracer.helpers.flask.callbacks.start_traced_span')

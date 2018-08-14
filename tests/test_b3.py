@@ -6,7 +6,8 @@ from pytest import fixture
 
 import logtracer.tracing
 from logtracer import _b3 as b3
-from logtracer.tracing import SpanError, end_span, generate_new_subspan_values, _generate_identifier
+from logtracer.tracing import end_span, generate_new_subspan_values, _generate_identifier
+from logtracer.exceptions import SpanError
 
 
 @fixture

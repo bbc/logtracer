@@ -3,15 +3,18 @@ import logging
 import requests
 
 from examples.flask.server import flask_port
-from logtracer.jsonlog import JSONLoggerHandler
+from logtracer.jsonlog import JSONLoggerFactory
 from logtracer.tracing import Tracer
 
 project_name = 'bbc-connected-data'
 service_name = 'demoApp'
 
-logger_handler = JSONLoggerHandler(project_name, service_name, 'local')
-logger = logger_handler.get_logger(__name__)
+logger_factory = JSONLoggerFactory(project_name, service_name, 'local')
+logger = logger_factory.get_logger(__name__)
 logger.setLevel('DEBUG')
+
+tracer = Tracer(logger_factory, post_spans_to_stackdriver_api=False)
+tracer.set_logging_level('DEBUG')
 
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('google.auth.transport.requests').setLevel(logging.WARNING)
@@ -53,9 +56,6 @@ def run_flask_examples():
 
 
 if __name__ == '__main__':
-    tracer = Tracer(logger_handler, post_spans_to_stackdriver_api=False)
-    tracer.set_logging_level('DEBUG')
-
     tracer.start_traced_span({}, 'run_examples')
 
     run_flask_examples()

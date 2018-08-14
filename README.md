@@ -13,7 +13,9 @@ It is good practise to pin the version or your code may break if this package is
 
 change structure
 
-### Enable JSON l=Logging
+NOTE ABOUT CYCLIC IMPORTING - use separate file
+
+### Enable JSON Logging
 
 ### Enable JSON Logging in Stackdriver Format
 

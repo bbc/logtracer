@@ -1,14 +1,14 @@
 from flask import Flask
 
 from logtracer.helpers.flask.flask_tracing import FlaskTracer
-from logtracer.jsonlog import JSONLoggerHandler
+from logtracer.jsonlog import JSONLoggerFactory
 
 
 def build_app(post_spans_to_stackdriver_api=False):
     project_name = 'bbc-connected-data'
     service_name = 'demoApp'
 
-    logger_handler = JSONLoggerHandler(project_name, service_name, 'local')
+    logger_handler = JSONLoggerFactory(project_name, service_name, 'local')
 
     flask_tracer = FlaskTracer(logger_handler, post_spans_to_stackdriver_api=post_spans_to_stackdriver_api)
     flask_tracer.set_logging_level('DEBUG')

@@ -1,11 +1,4 @@
 # Flask Helpers
-
-
-> For usage in a standard 
-
-
-
-
 >These are utilities designed to make integration with a Flask app simpler. Flask isn't included as a requirement of this
 package but it should be in the app you are using this for.
 
@@ -13,11 +6,15 @@ package but it should be in the app you are using this for.
 Before following these instructions, make sure to follow the instructions in the [main readme](../../../README.md).
 Example code exists in `/examples`, look at these for working implementations.
 Once implemented, inbound requests will be logged on opening and closing of the connection and the tracing information will be sent to the Stackdriver Trace API (if desired).
-Exceptions tracebacks and responses will be logged too so avoid using `logger.exception(e)` in your Flask error handlers as this should be handled by this library.
+Exceptions, tracebacks, and responses will be logged too so avoid using `logger.exception(e)` in your Flask error handlers as this should be handled by this library.
+
+
+### Configure Tracing
+
 
 ### Tracing Inbound Requests
 Flask has [callbacks](http://flask.pocoo.org/docs/1.0/api/#flask.Flask.after_request) that allow you to run code before and after each request. 
-These callbacks can be used to start and end spans and log the requests.
+These callbacks can are used to start and end spans and log the requests.
 
 ```python
 from flask import Flask
@@ -54,3 +51,4 @@ def exception_handler(e):
 ...
 ```
 
+### Tracing Outbound Requests

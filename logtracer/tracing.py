@@ -133,10 +133,11 @@ class Tracer:
 
     def end_traced_span(self, exclude_from_posting=False):
         """
-        End a b3 span and collect details about the span, then post it to the API
-        (depending on the `_global_vars.post_spans_to_api` flag).
-        """
+        End a span and collect details about the span, then post it to the API.
 
+        Arguments:
+            exclude_from_posting (bool): exclude this particular trace from being posted
+        """
         self.logger.debug(f'Closing span {self.current_span}')
 
         span_values = self.current_span['values']
@@ -202,6 +203,35 @@ class Tracer:
         if self._memory is None:
             self._memory = local()
         return self._memory
+
+
+class SpanContext:
+    def __init__(self, tracer, incoming_headers, request_path, exclude_from_posting=False):
+        """Context manager for creating a span."""
+        self.tracer = tracer
+        self.request_path = request_path,
+        self.exclude = exclude_from_posting
+        self.incoming_headers = incoming_headers
+
+    def __enter__(self):
+        self.tracer.start_traced_span(self.incoming_headers, self.request_path)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.tracer.end_traced_span(self.exclude)
+
+
+class SubSpanContext:
+    def __init__(self, tracer, request_path, exclude_from_posting=False):
+        """Context manager for creating a subspan."""
+        self.tracer = tracer
+        self.request_path = request_path,
+        self.exclude = exclude_from_posting
+
+    def __enter__(self):
+        self.tracer.start_traced_subspan(self.request_path)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.tracer.end_traced_subspan(self.exclude)
 
 
 class RequestsWrapper:

@@ -11,40 +11,117 @@ TODO: running instructions
 Install: `pip install git+https://github.com/bbc/logtracer@[BRANCH or COMMIT_HASH or TAG_NAME]`.
 It is good practise to pin the version or your code may break if this package is updated.
 
-change structure
 
 NOTE ABOUT CYCLIC IMPORTING - use separate file
 
-### Enable JSON Logging
+### JSON Logging 
+Before any logs are written, a `JSONLoggingFactory` instance must be created. This is used to manage logging, with
+optional tracing, across the package.
 
-### Enable JSON Logging in Stackdriver Format
-
-### Configure Tracing 
-
-Three ways:
-- `FlaskTracer` class
-- `gRPCTracer` class
-- `Tracer` class
-
-
-
-### Logging
-
-TODO: rewrite this
-
-Before writing any logs, the `configure_json_logging` command must be ran _once_ per package.
-There are two formatters available for usage with logging, `local` and `stackdriver`, described further in the [Purpose](#purpose) section.
-It is advisable to set this using an environmental variable, as below:
 ```python
-from logtracer.jsonlog import configure_json_logging, get_logger
-import os
+# app/log.py
+from logtracer.jsonlog import JSONLoggerFactory
+import os 
+
+project_name = 'bbc-connected-data'
+service_name = 'demoApp'
 
 logging_format = os.getenv('LOGGING_FORMAT', 'local')
-configure_json_logging('project name', 'service name', logging_format)
-logger = get_logger()
-logger.setLevel('INFO')
+
+logger_factory = JSONLoggerFactory(project_name, service_name, logging_format)
+logger = logger_factory.get_logger(__name__)
+logger.setLevel('DEBUG')
 ```
-Once this is configured, use `logtracing.jsonlog.get_logger` to retrieve the logger elsewhere in your code. 
+Initialise this, as above, _once_ in your app. You may need to initialise it in a separate file to prevent cyclic import errors.
+Eg. the above could be contained in `log.py` and across your app you can use:
+```python
+from app.log import logger_factory
+
+logger = logger_factory.get_logger(__name__)
+```
+
+### JSON Logging in Stackdriver Format
+To format the JSON logs in such a way that Stackdriver Logs can understand, pass in `stackdriver` as the `logging_format`.
+it is recommended you do this using an environmental variable as above.
+
+### Tracing 
+By default tracing functionality is disabled, you may use the logging functionality without any tracing functionality.
+
+There are three ways to implement tracing, depending on your use case:
+#### `Tracer` class
+Use this if you are not using Flask or gRPC, or if you would like to use the library for purposes other than to trace individual requests.
+Initialise the Tracer class _once_ in your app, and it is recommended you do it in a seprarate file to avoid cyclic import errors.
+```python
+# app/trace.py
+from app.log import logger_factory
+from logtracer.tracing import Tracer
+
+...
+
+enable_trace_posting = os.getenv('ENABLE_TRACE_POSTING', 'false') == 'true'
+tracer = Tracer(logger_factory, post_spans_to_stackdriver_api=enable_trace_posting)
+tracer.set_logging_level('DEBUG') # 'INFO' recommended in production
+```
+Using the Tracer instance to manage spans:
+```python
+from app.trace.py import tracer
+from app.log import logger_factory
+
+logger = logger_factory.get_logger(__name__)
+
+logger.info('Outside of span')
+
+tracer.start_traced_span(headers, 'example-path')
+
+logger.info('Make traced request in span')
+tracer.requests.get('http://example-url.com')
+
+tracer.start_traced_subspan('example-sub-path')
+
+logger.info('Make traced request in subspan')
+tracer.requests.get('http://example-url2.com')
+
+tracer.end_traced_subspan(exclude_from_posting=False)
+
+tracer.end_traced_span(exclude_from_posting=False)
+
+```
+Or, using context managers:
+
+```python
+from app.trace.py import tracer
+from app.log import logger_factory
+from logtracer.tracing import SpanContext, SubSpanContext
+
+...
+
+logger = logger_factory.get_logger(__name__)
+
+logger.info('Outside of span')
+with SpanContext(tracer, headers, 'example-path'):
+
+    logger.info('Make traced request in span')
+    tracer.requests.get('http://example-url.com')
+    
+    with SubSpanContext(tracer, 'example-sub-path'):
+        logger.info('Make traced request in subspan')
+        tracer.requests.get('http://example-url2.com')
+
+```
+The `Tracer` class (and therefore the `FlaskTracer` and `GRPCTracer` class) has a `requests` property. This wraps the standard
+requests library to automatically inject the span values into any outgoing `get`, `post`, `update`, etc. requests.
+
+
+Both the `FlaskTracer` and `GRPCTracer` class inherit from the `Tracer` class and wrap these features to make implementation simpler.
+    
+#### `FlaskTracer` class
+See readme
+
+#### `GRPCTracer` class
+See readme
+
+#### Stackdriver Trace API
+
 
 ### Tracing
 
@@ -58,7 +135,6 @@ Configure it as follows (using an environmental variable), making sure to do thi
 from logtracer.tracing import configure_tracing
 import os 
 
-enable_trace_posting = os.getenv('ENABLE_TRACE_POSTING', 'false') == 'true'
 configure_tracing(post_spans_to_stackdriver_api=enable_trace_posting)
 ```
 If you choose to enable posting trace information to the API  _locally_ (unadvised unless you are specifically testing functionality of the Trace API), 

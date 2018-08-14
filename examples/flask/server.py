@@ -1,14 +1,15 @@
-import requests
 from flask import jsonify, make_response
 
 from examples.flask.flask_factory import build_app
+from examples.flask.log import logger_factory
+from examples.flask.trace import flask_tracer
 
 # flask
-app, flask_tracer, logger_handler = build_app()
+app = build_app(flask_tracer, post_spans_to_stackdriver_api=False)
 flask_port = 5005
 
 # logging
-logger = logger_handler.get_logger(__name__)
+logger = logger_factory.get_logger(__name__)
 logger.setLevel('DEBUG')
 
 

@@ -1,20 +1,11 @@
 import logging
 
-import requests
-
+from examples.flask.log import logger_factory
 from examples.flask.server import flask_port
-from logtracer.jsonlog import JSONLoggerFactory
-from logtracer.tracing import Tracer
+from examples.flask.trace import flask_tracer
 
-project_name = 'bbc-connected-data'
-service_name = 'demoApp'
-
-logger_factory = JSONLoggerFactory(project_name, service_name, 'local')
 logger = logger_factory.get_logger(__name__)
 logger.setLevel('DEBUG')
-
-tracer = Tracer(logger_factory, post_spans_to_stackdriver_api=False)
-tracer.set_logging_level('DEBUG')
 
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('google.auth.transport.requests').setLevel(logging.WARNING)
@@ -31,33 +22,31 @@ def run_flask_examples():
     # with, the teardown callback closes the span. Every time `end_span` is called, logs are sent to the Stackdriver
     # Trace API.
     logger.info('Single call to Flask root endpoint...')
-    requests.get(f'http://localhost:{flask_port}/', headers=tracer.generate_new_traced_subspan_values())
+    flask_tracer.requests.get(f'http://localhost:{flask_port}/')
 
     # Call an endpoint so a span is created, then within that span call another endpoint and pass the tracing
     # parameters. This will create a new subspan with the same trace ID as the initial request and a new span ID will
     # be generated. Confirm this in the log outputs.
     logger.info('Double call to Flask endpoints...')
-    requests.get(f'http://localhost:{flask_port}/doublehttp', headers=tracer.generate_new_traced_subspan_values())
+    flask_tracer.requests.get(f'http://localhost:{flask_port}/doublehttp')
 
     # Do as the first example but call endpoints which are 'excluded', these should not appear in the Trace API.
     logger.info('Two calls to endpoints excluded from Trace API...')
-    requests.get(f'http://localhost:{flask_port}/exclude-full', headers=tracer.generate_new_traced_subspan_values())
-    requests.get(f'http://localhost:{flask_port}/exclude-with-path-var/examplepathvar1',
-                 headers=tracer.generate_new_traced_subspan_values())
+    flask_tracer.requests.get(f'http://localhost:{flask_port}/exclude-full')
+    flask_tracer.requests.get(f'http://localhost:{flask_port}/exclude-with-path-var/examplepathvar1')
 
     # Call to an endpoint in which an exception is raised and handled by a flask error handler
     logger.info('Call to handled exception...')
-    requests.get(f'http://localhost:{flask_port}/handledexception', headers=tracer.generate_new_traced_subspan_values())
+    flask_tracer.requests.get(f'http://localhost:{flask_port}/handledexception')
 
     # Call to an endpoint where an exception is raised and not caught by a flask error handler
     logger.info('Call to unhandled exception...')
-    requests.get(f'http://localhost:{flask_port}/unhandledexception',
-                 headers=tracer.generate_new_traced_subspan_values())
+    flask_tracer.requests.get(f'http://localhost:{flask_port}/unhandledexception')
 
 
 if __name__ == '__main__':
-    tracer.start_traced_span({}, 'run_examples')
+    flask_tracer.start_traced_span({}, 'run_examples')
 
     run_flask_examples()
 
-    tracer.end_traced_span(exclude_from_posting=False)
+    flask_tracer.end_traced_span(exclude_from_posting=False)

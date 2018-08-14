@@ -7,13 +7,7 @@ from grpc._channel import _Rendezvous
 from examples.grpc.resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
 from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc.server import grpc_port
-from logtracer.helpers.grpc.tracer import GRPCTracer
-from logtracer.jsonlog import JSONLoggerFactory
-
-project_name = 'bbc-connected-data'
-service_name = 'demoApp'
-
-logger_handler = JSONLoggerFactory(project_name, service_name, 'local')
+from examples.grpc.trace import grpc_tracer
 
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('google.auth.transport.requests').setLevel(logging.WARNING)
@@ -67,18 +61,10 @@ def run_grpc_examples(stub):
 
 if __name__ == '__main__':
     print('****** Local formatted examples with non-posted traces ******')
-
-    tracer = GRPCTracer(
-        logger_handler,
-        post_spans_to_stackdriver_api=False
-    )
-
     channel = grpc.insecure_channel(f'localhost:{grpc_port}')
-    intercept_channel = grpc.intercept_channel(channel, tracer.client_interceptor())
+    intercept_channel = grpc.intercept_channel(channel, grpc_tracer.client_interceptor())
     stub = DemoServiceStub(intercept_channel)
 
-    tracer.set_logging_level('DEBUG')
-
-    tracer.start_traced_span({}, 'run_examples')
+    grpc_tracer.start_traced_span({}, 'run_examples')
     run_grpc_examples(stub)
-    tracer.end_traced_span(exclude_from_posting=False)
+    grpc_tracer.end_traced_span(exclude_from_posting=False)

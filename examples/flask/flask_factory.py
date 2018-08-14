@@ -1,18 +1,6 @@
 from flask import Flask
 
-from logtracer.helpers.flask.tracer import FlaskTracer
-from logtracer.jsonlog import JSONLoggerFactory
-
-
-def build_app(post_spans_to_stackdriver_api=False):
-    project_name = 'bbc-connected-data'
-    service_name = 'demoApp'
-
-    logger_handler = JSONLoggerFactory(project_name, service_name, 'local')
-
-    flask_tracer = FlaskTracer(logger_handler, post_spans_to_stackdriver_api=post_spans_to_stackdriver_api)
-    flask_tracer.set_logging_level('DEBUG')
-
+def build_app(flask_tracer, post_spans_to_stackdriver_api=False):
     app = Flask('demoFlaskApp')
 
     app.before_request(flask_tracer.start_span_and_log_request_before())
@@ -23,4 +11,4 @@ def build_app(post_spans_to_stackdriver_api=False):
             excluded_partial_routes=['/exclude-with-path-var']
         )
     )
-    return app, flask_tracer, logger_handler
+    return app

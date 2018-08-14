@@ -4,7 +4,7 @@ from concurrent import futures
 import grpc
 
 from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
-from logtracer.helpers.grpc.interceptors import GRPCTracer
+from logtracer.helpers.grpc.tracer import GRPCTracer
 from logtracer.jsonlog import JSONLoggerFactory
 
 ONE_DAY_IN_SECONDS = 60 * 60 * 24
@@ -12,16 +12,16 @@ ONE_DAY_IN_SECONDS = 60 * 60 * 24
 project_name = 'bbc-connected-data'
 service_name = 'demoApp'
 
-logger_handler = JSONLoggerFactory(project_name, service_name, 'local')
+logger_factory = JSONLoggerFactory(project_name, service_name, 'local')
 
 grpc_tracer = GRPCTracer(
-    logger_handler,
+    logger_factory,
     post_spans_to_stackdriver_api=False,
     redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1']
 )
 grpc_tracer.set_logging_level('DEBUG')
 
-logger = logger_handler.get_logger('demoGRPCLogger')
+logger = logger_factory.get_logger('demoGRPCLogger')
 logger.setLevel('DEBUG')
 
 grpc_port = 50055

@@ -50,7 +50,7 @@ By default tracing functionality is disabled, you may use the logging functional
 There are three ways to implement tracing, depending on your use case:
 #### `Tracer` class
 Use this if you are not using Flask or gRPC, or if you would like to use the library for purposes other than to trace individual requests.
-Initialise the Tracer class _once_ in your app, and it is recommended you do it in a seprarate file to avoid cyclic import errors.
+Initialise the Tracer class _once_ in your app, and it is recommended you do it in a separate file to avoid cyclic import errors.
 ```python
 # app/trace.py
 from app.log import logger_factory
@@ -111,115 +111,27 @@ with SpanContext(tracer, headers, 'example-path'):
 The `Tracer` class (and therefore the `FlaskTracer` and `GRPCTracer` class) has a `requests` property. This wraps the standard
 requests library to automatically inject the span values into any outgoing `get`, `post`, `update`, etc. requests.
 
-
 Both the `FlaskTracer` and `GRPCTracer` class inherit from the `Tracer` class and wrap these features to make implementation simpler.
-    
+   
+#### `MixedTracer` class
+See [MixedTracer](logtracer/helpers/mixed), use with a Flask app that makes calls to a gRPC service. Inherits from both
+`GRPCTracer` and `FlaskTracer`.
+
 #### `FlaskTracer` class
-See readme
+See [FlaskTracer](logtracer/helpers/flask), use with a pure Flask app.
 
 #### `GRPCTracer` class
-See readme
+See [GRPCTracer](logtracer/helpers/grpc), use with a gRPC app.
 
 #### Stackdriver Trace API
-
-
-### Tracing
-
-TODO: rewrite this
-
-By default tracing functionality is disabled - tracing IDs will not show in the logs and nothing will be posted to the Stackdriver Trace API.
-There are three steps to enabling tracing:
-#### 1. Configure Tracing
-Configure it as follows (using an environmental variable), making sure to do this before writing any logs. It is advised to leave it disabled when working locally.
-```python
-from logtracer.tracing import configure_tracing
-import os 
-
-configure_tracing(post_spans_to_stackdriver_api=enable_trace_posting)
-```
 If you choose to enable posting trace information to the API  _locally_ (unadvised unless you are specifically testing functionality of the Trace API), 
 then you *must* set up authentication for the [google-cloud-trace](https://pypi.org/project/google-cloud-trace/) client using the following command: 
 ```
 gcloud auth application-default login
 ```
-If `post_spans_to_stackdriver_api` is set to `True`, and GCP Credentials are not found, an exception will be raised.
+If the `post_spans_to_stackdriver_api` argument to the `Tracer` instance is `True`, and GCP Credentials are not found, an exception will be raised.
 
-If you deploying to a Kubernetes container, then it should automatically pick up the GCP credentials. 
-
-#### 2. Create Spans
-
-
-
-Running `configure_tracing` alone will _not_ show any tracing information. To add traces, requests must be handled inside a span.
-Any log entries written inside a span will have the span's `trace id` and `span id` attached. 
-```python
-from logtracer.tracing import start_traced_span, end_traced_span
-
-...
-
-logger.info('log entry without trace info')
-start_traced_span(inbound_headers, request_path)
-
-...
-
-logger.info('log entry with trace info')
-
-...
-
-end_traced_span()
-logger.info('log entry without trace info')
-```
-
-If you are using Flask or gRPC, then there are helpers available to simplify implementation:
-- [Implementing Tracing in a Flask App](logtracer/helpers/flask)
-- [Implementing Tracing in a gRPC App](logtracer/helpers/grpc)
-
-#### 3. Send Trace Information to Downstream Services
-When making a call to a downstream service, values for the subspan must be created. Previous versions of this package
-implemented a context manager, this version removes that functionality to keep things as simple as possible to implement - 
-it may come back in a later version.
-
-When making an outbound HTTP request to another service implementing this library, the tracing values should be sent in the header. 
-This is as simple as
-```python
-from logtracer.tracing import generate_new_traced_subspan_values
-import requests
-
-...
-# must be inside a span
-response = requests.get('http://example-downstream-http-microservice.com/endpoint', headers=generate_new_traced_subspan_values())
-
-...
-
-```
-Similarly, when calling a downstream gRPC service, the code should look similar to the following
-```python
-from examples.grpc.resources.grpc_demo_pb2 import EmptyMessage
-from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
-from logtracer.tracing import generate_new_traced_subspan_values
-import grpc 
-
-channel = grpc.insecure_channel(f'localhost:{grpc_port}')
-stub = DemoServiceStub(channel)
-
-...
-
-# must be inside a span
-message = EmptyMessage(
-    b3_values=generate_new_traced_subspan_values()
-)
-stub.DemoRPC(message)
-
-...
-```
-I.e. the B3 values should be included in the message. In the `proto` spec, this message looks like
-```proto
-message EmptyMessage {
-    map<string,string> b3_values = <N>;
-}
-```
-where `<N>` is the number of the field.
-
+If you deploying to a Kubernetes container, then GCP credentials should be retrieved automatically.
 
 ## Purpose
 
@@ -257,7 +169,7 @@ Two important pieces of metadata dealt with by this module are the `span id` and
 These parameters make it possible to trace requests across different services, an approach described in more detail in the 
 [openzipkin/b3-propagation](https://github.com/openzipkin/b3-propagation) repository. 
 
-Currently, these IDs are included in the JSON logs if present and omitted if not. 
+These IDs are included in the JSON logs if present and omitted if not. 
 The span details are also posted to the [Stackdriver Trace API](https://cloud.google.com/trace/), this functionality is *disabled* by default. 
 The Trace API exists separate to the Logging API, meaning that unfortunately the Trace API cannot pull the trace information 
 from the logs. Instead, these have to be posted separately. This package does this using Google's [google-cloud-trace](https://pypi.org/project/google-cloud-trace/)

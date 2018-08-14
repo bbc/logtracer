@@ -7,7 +7,7 @@ from grpc._channel import _Rendezvous
 from examples.grpc.resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
 from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
 from examples.grpc.server import grpc_port
-from logtracer.helpers.grpc.interceptors import GRPCTracer
+from logtracer.helpers.grpc.tracer import GRPCTracer
 from logtracer.jsonlog import JSONLoggerFactory
 
 project_name = 'bbc-connected-data'

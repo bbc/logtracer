@@ -9,107 +9,83 @@ Once implemented, inbound requests will be logged on opening and closing of the 
 Exceptions tracebacks and responses will be logged too so avoid using `logger.exception(e)` in your gRPC error handlers as this should be handled by this library.
 
 ### Tracing Inbound Requests
-You can handle inbound gRPC calls to your app using the decorators provided here. You can choose to either trace all 
-calls with the `trace_all_calls` decorator or choose certain methods and decorate them with `trace_call`.
-
-The decorator accepts an argument for `redacted_fields` to be specified, as by default the full inbound request is logged. 
-It will replace any matching fields with `"REDACTED"` and ignore if it cant find the field. You may specify nested fields.
-
 ```python
-from logtracer.helpers.grpc.decorators import trace_all_calls
-from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
+# app/trace.py
+from app.log import logger_factory
+from logtracer.helpers.grpc.tracer import GRPCTracer
 
-@trace_all_calls(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
-class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
-    def DemoRPC(self, request, context):
-        return grpc_demo_pb2.EmptyMessage()
-
+grpc_tracer = GRPCTracer(
+    logger_factory,
+    post_spans_to_stackdriver_api=False,
+    redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1']
+)
+grpc_tracer.set_logging_level('DEBUG')
 ```
-
-```python
-from logtracer.helpers.grpc.decorators import trace_call
-from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
-
-class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
-    @trace_call(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
-    def DemoRPCRedactedParameters(self, request, context):
-        return grpc_demo_pb2.EmptyMessage()
-
-```
-
-If handling exceptions with decorators, then the exception-handling decorators should be _above_ the `trace_all_calls` decorator or the `trace_call` decorators as below:
-
 
 ```python
 import grpc
-from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
-from logtracer.helpers.grpc.decorators import trace_call, trace_all_calls
+import time
+
+from app.trace import grpc_tracer
+from app.log import logger_factory
+from concurrent import futures
+from examples.grpc.resources import grpc_demo_pb2_grpc
+
+ONE_DAY_IN_SECONDS = 60 * 60 * 24
+grpc_port = 50055
 
 
-#### Exception handlers ####
+logger = logger_factory.get_logger(__name__)
 
-def handle_exceptions(f):
-    def wrapper(self, request, context):
-        try:
-            return f(self, request, context)
-        except Exception:
-            context.abort(grpc.StatusCode.INTERNAL, 'Handled exception, closing context')
-
-    return wrapper
+def create_server(gprc_port):
+    #### key part #####
+    server_interceptor = grpc_tracer.server_interceptor()
+    server = grpc.server(
+        futures.ThreadPoolExecutor(),
+        interceptors=(server_interceptor,)
+    )
+    ###################
+    grpc_demo_pb2_grpc.add_DemoServiceServicer_to_server(DemoRPC(), server)
+    server.add_insecure_port(f'[::]:{grpc_port}')
+    server.start()
+    logger.info(f'Starting gRPC server on http://localhost:{grpc_port}.')
+    return server
     
-    
-def handle_exception_for_all_methods():
-    """Apply a the `handle_exceptions` decorator to all methods of a Class, excluding `__init__`."""
 
-    def decorate(cls):
-        for attr in cls.__dict__:
-            if callable(getattr(cls, attr)) and attr != '__init__':
-                setattr(cls, attr, handle_exceptions(getattr(cls, attr)))
-        return cls
+def run_grpc_server():
+    server = create_server(grpc_port)
+    try:
+        while True:
+            time.sleep(ONE_DAY_IN_SECONDS)
+    except KeyboardInterrupt:
+        server.stop(0)
+```
 
-    return decorate
-    
-    
-#### Exception handling with `trace_call` decorator ####
+### Tracing Outbound Requests
+#### HTTP
 
-# correct example
-class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
-    @handle_exceptions
-    @trace_call(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
-    def DemoRPCRedactedParameters(self, request, context):
-        return grpc_demo_pb2.EmptyMessage()
-        
-# incorrect example, the context will be aborted before the tracing decorator can close the span (and therefore post it)
-class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
-    @trace_call(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
-    @handle_exceptions
-    def DemoRPCRedactedParameters(self, request, context):
-        return grpc_demo_pb2.EmptyMessage()
+```python
+from app.trace import grpc_tracer
 
+...
 
-#### Exception handling with `trace_all_calls` decorator ####
+grpc_tracer.requests.get('http://example-get.com')
+grpc_tracer.requests.post('http://example-post.com', data={'data':'test'})
 
-# correct example
-@handle_exception_for_all_methods()
-@trace_all_calls(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
-class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
-    def DemoRPC(self, request, context):
-        return grpc_demo_pb2.EmptyMessage()
-        
+...
+```
 
-# incorrect example, the context will be aborted before the span can be closed
-@trace_all_calls(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
-@handle_exception_for_all_methods()
-class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
-    def DemoRPC(self, request, context):
-        return grpc_demo_pb2.EmptyMessage()
-        
-        
-# incorrect example, the context will be aborted before the span can be closed
-@trace_all_calls(redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1'])
-class DemoRPC(grpc_demo_pb2_grpc.DemoServiceServicer):
-    @handle_exceptions
-    def DemoRPC(self, request, context):
-        return grpc_demo_pb2.EmptyMessage()
+#### gRPC
+```python
+import grpc
+from app.trace import grpc_tracer
 
+grpc_port = 50055
+
+channel = grpc.insecure_channel(f'localhost:{grpc_port}')
+intercept_channel = grpc.intercept_channel(channel, grpc_tracer.client_interceptor())
+stub = DemoServiceStub(intercept_channel)
+
+message = EmptyMessage()
+stub.DemoRPC(message)
 ```

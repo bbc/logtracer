@@ -1,16 +1,15 @@
 import os
 import time
 from binascii import hexlify
-from copy import deepcopy
 from threading import Thread, local
 
-import requests
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
 
 from logtracer.exceptions import StackDriverAuthError, SpanNotStartedError
+from logtracer.requests_wrapper import RequestsWrapper
 
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
 TRACE_LEN = 32
@@ -52,6 +51,7 @@ class Tracer:
         self.service_name = json_logger_factory.service_name
         self.logger = json_logger_factory.get_logger(__name__)
         self.requests = RequestsWrapper(self)
+        self.stackdriver_trace_client = None
 
         self._spans = {}
         self._memory = None
@@ -64,13 +64,13 @@ class Tracer:
         """If the flag is enabled then attempt to load the trace client used for posting spans to the Trace API."""
         if self._post_spans_to_stackdriver_api:
             try:
-                self.trace_client = TraceServiceClient()
+                self.stackdriver_trace_client = TraceServiceClient()
             except DefaultCredentialsError:
                 raise StackDriverAuthError('Cannot post spans to API, no authentication credentials found.')
 
-    def _add_tracer_to_logger_formatter(self, json_logger_handler):
+    def _add_tracer_to_logger_formatter(self, json_logger_factory):
         """Add this instance to the logging formatter to allow the logger to format logs with trace information."""
-        json_logger_handler.get_logger().root.handlers[0].formatter.tracer = self
+        json_logger_factory.get_logger().root.handlers[0].formatter.tracer = self
 
     def set_logging_level(self, level):
         """
@@ -124,9 +124,10 @@ class Tracer:
 
     def start_traced_subspan(self, span_name):
         """Start a traced subspan, for usage with wrapping an unsupported downstream service."""
-
+        subspan_values = self.generate_new_traced_subspan_values()
         self.memory.parent_spans.append(self.memory.current_span_id)
-        self.start_traced_span(self.generate_new_traced_subspan_values(), span_name)
+        self.memory.current_span_id = None
+        self.start_traced_span(subspan_values, span_name)
 
     def end_traced_subspan(self, exclude_from_posting=False):
         """Close a traced subspan."""
@@ -146,8 +147,8 @@ class Tracer:
 
         end_timestamp = _get_timestamp()
         if self._post_spans_to_stackdriver_api:
-            name = self.trace_client.span_path(self.project_name, span_values[B3_TRACE_ID],
-                                               span_values[B3_SPAN_ID])
+            name = self.stackdriver_trace_client.span_path(self.project_name, span_values[B3_TRACE_ID],
+                                                           span_values[B3_SPAN_ID])
         else:
             name = f'{self.project_name}/{span_values[B3_TRACE_ID]}/{span_values[B3_SPAN_ID]}'
 
@@ -162,7 +163,7 @@ class Tracer:
             'child_span_count': Int32Value(value=self.current_span['child_span_count'])
         }
         if self._post_spans_to_stackdriver_api and not exclude_from_posting:
-            post_to_api_job = Thread(target=_post_span, args=(self.trace_client, span_info))
+            post_to_api_job = Thread(target=_post_span, args=(self.stackdriver_trace_client, span_info))
             post_to_api_job.start()
 
         self._delete_current_span()
@@ -236,28 +237,6 @@ class SubSpanContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.tracer.end_traced_subspan(self.exclude)
-
-
-class RequestsWrapper:
-    def __init__(self, tracer):
-        """Wraps the requests library to automatically attach tracing information to outgoing headers."""
-        self.tracer = tracer
-        request_methods = [method for method in dir(requests.api) if not method.startswith('_')]
-
-        def wrapped_request(method):
-            def wrapper(*args, **kwargs):
-                headers = deepcopy(kwargs.get('headers', {}))
-                headers.update(self.tracer.generate_new_traced_subspan_values())
-                kwargs['headers'] = headers
-                self.tracer.logger.info(f'{method.upper()} - {args[0]}')
-                response = getattr(requests, method)(*args, **kwargs)
-                self.tracer.logger.info(f'{response.status_code} {response.reason} - {args[0]}')
-                return response
-
-            return wrapper
-
-        for method in request_methods:
-            setattr(self, method, wrapped_request(method))
 
 
 def _post_span(trace_client, span_info):

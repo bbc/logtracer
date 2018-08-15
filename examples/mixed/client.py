@@ -13,8 +13,6 @@ logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
 logging.getLogger('b3').setLevel(logging.WARNING)
 
 
-# These demos illustrate simple calls to a Flask and gRPC server as well as a call from a Flask server to a gRPC
-# server.
 def run_flask_examples():
     # Call a Flask endpoint that calls a gRPC endpoint
     logger.info('Call to Flask grpc endpoint...')

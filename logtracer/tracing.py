@@ -110,7 +110,7 @@ class Tracer:
         }
         self.memory.current_span_id = span_id
 
-        self.logger.debug(f'Span started {self.current_span}')
+        self.logger.debug(f'Span started {self.memory.current_span_id}')
 
     @property
     def current_span(self):
@@ -141,28 +141,28 @@ class Tracer:
         Arguments:
             exclude_from_posting (bool): exclude this particular trace from being posted
         """
-        self.logger.debug(f'Closing span {self.current_span}')
+        self.logger.debug(f'Closing span {self.memory.current_span_id}')
 
-        span_values = self.current_span['values']
-
-        end_timestamp = _get_timestamp()
-        if self._post_spans_to_stackdriver_api:
-            name = self.stackdriver_trace_client.span_path(self.project_name, span_values[B3_TRACE_ID],
-                                                           span_values[B3_SPAN_ID])
-        else:
-            name = f'{self.project_name}/{span_values[B3_TRACE_ID]}/{span_values[B3_SPAN_ID]}'
-
-        span_info = {
-            'name': name,
-            'span_id': span_values[B3_SPAN_ID],
-            'display_name': _truncate_str(self.current_span['display_name'], limit=SPAN_DISPLAY_NAME_BYTE_LIMIT),
-            'start_time': self.current_span['start_timestamp'],
-            'end_time': end_timestamp,
-            'parent_span_id': span_values[B3_PARENT_SPAN_ID],
-            'same_process_as_parent_span': BoolValue(value=False),
-            'child_span_count': Int32Value(value=self.current_span['child_span_count'])
-        }
         if self._post_spans_to_stackdriver_api and not exclude_from_posting:
+            span_values = self.current_span['values']
+
+            end_timestamp = _get_timestamp()
+            if self._post_spans_to_stackdriver_api:
+                name = self.stackdriver_trace_client.span_path(self.project_name, span_values[B3_TRACE_ID],
+                                                               span_values[B3_SPAN_ID])
+            else:
+                name = f'{self.project_name}/{span_values[B3_TRACE_ID]}/{span_values[B3_SPAN_ID]}'
+
+            span_info = {
+                'name': name,
+                'span_id': span_values[B3_SPAN_ID],
+                'display_name': _truncate_str(self.current_span['display_name'], limit=SPAN_DISPLAY_NAME_BYTE_LIMIT),
+                'start_time': self.current_span['start_timestamp'],
+                'end_time': end_timestamp,
+                'parent_span_id': span_values[B3_PARENT_SPAN_ID],
+                'same_process_as_parent_span': BoolValue(value=False),
+                'child_span_count': Int32Value(value=self.current_span['child_span_count'])
+            }
             post_to_api_job = Thread(target=_post_span, args=(self.stackdriver_trace_client, span_info))
             post_to_api_job.start()
 
@@ -239,9 +239,9 @@ class SubSpanContext:
         self.tracer.end_traced_subspan(self.exclude)
 
 
-def _post_span(trace_client, span_info):
-    """Post span to Trace API."""
-    trace_client.create_span(**span_info)
+def _post_span(stackdriver_trace_client, span_info):
+    """Post span to Stackdriver Trace API."""
+    stackdriver_trace_client.create_span(**span_info)
 
 
 def _get_timestamp():

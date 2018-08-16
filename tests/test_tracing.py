@@ -11,7 +11,8 @@ from pytest import fixture
 
 from logtracer.exceptions import StackDriverAuthError, SpanNotStartedError
 from logtracer.requests_wrapper import RequestsWrapper
-from logtracer.tracing import Tracer, _post_span, _get_timestamp, _to_seconds_and_nanos, _truncate_str
+from logtracer.tracing import Tracer, _post_span, _get_timestamp, _to_seconds_and_nanos, _truncate_str, SpanContext, \
+    SubSpanContext
 
 CLASS_PATH = 'logtracer.tracing.Tracer.'
 MODULE_PATH = 'logtracer.tracing.'
@@ -171,6 +172,12 @@ def test_tracer_start_traced_subspan(tracer):
     tracer.start_traced_span.assert_called_with('test_new_subspan_values', 'test_span_name')
 
 
+def test_tracer_start_traced_subspan_without_span(tracer):
+    tracer.memory.current_span_id = None
+    with pytest.raises(SpanNotStartedError):
+        tracer.start_traced_subspan('test_span_name')
+
+
 def test_tracer_end_traced_subspan(tracer):
     tracer.end_traced_span = MagicMock()
     tracer.memory.parent_spans = ['test_parent_span_id']
@@ -298,11 +305,19 @@ def test_tracer_memory():
 
 
 def test_spancontext():
-    assert False
+    m_tracer = MagicMock()
+    with SpanContext(m_tracer, {'test': 'headers'}, 'test_span_name', exclude_from_posting='test_exclude_bool'):
+        m_tracer.start_traced_span.assert_called_with({'test': 'headers'}, 'test_span_name')
+        assert not m_tracer.end_traced_span.called
+    m_tracer.end_traced_span.assert_called_with('test_exclude_bool')
 
 
-def test_subspancontext():
-    assert False
+def test_subspancontext_no_span():
+    m_tracer = MagicMock()
+    m_tracer.start_traced_subspan.side_effect = SpanNotStartedError
+    with pytest.raises(SpanNotStartedError):
+        with SubSpanContext(m_tracer, 'test_span_name', 'test_exclude_bool'):
+            pass
 
 
 def test_post_span():

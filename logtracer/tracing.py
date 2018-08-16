@@ -124,6 +124,8 @@ class Tracer:
 
     def start_traced_subspan(self, span_name):
         """Start a traced subspan, for usage with wrapping an unsupported downstream service."""
+        if self.memory.current_span_id is None:
+            raise SpanNotStartedError('Span must be started before starting a subspan')
         subspan_values = self.generate_new_traced_subspan_values()
         self.memory.parent_spans.append(self.memory.current_span_id)
         self.memory.current_span_id = None
@@ -211,29 +213,29 @@ class Tracer:
 
 
 class SpanContext:
-    def __init__(self, tracer, incoming_headers, request_path, exclude_from_posting=False):
+    def __init__(self, tracer, incoming_headers, span_name, exclude_from_posting=False):
         """Context manager for creating a span."""
         self.tracer = tracer
-        self.request_path = request_path,
+        self.span_name = span_name
         self.exclude = exclude_from_posting
         self.incoming_headers = incoming_headers
 
     def __enter__(self):
-        self.tracer.start_traced_span(self.incoming_headers, self.request_path)
+        self.tracer.start_traced_span(self.incoming_headers, self.span_name)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.tracer.end_traced_span(self.exclude)
 
 
 class SubSpanContext:
-    def __init__(self, tracer, request_path, exclude_from_posting=False):
+    def __init__(self, tracer, span_name, exclude_from_posting=False):
         """Context manager for creating a subspan."""
         self.tracer = tracer
-        self.request_path = request_path,
+        self.span_name = span_name,
         self.exclude = exclude_from_posting
 
     def __enter__(self):
-        self.tracer.start_traced_subspan(self.request_path)
+        self.tracer.start_traced_subspan(self.span_name)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.tracer.end_traced_subspan(self.exclude)

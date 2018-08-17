@@ -18,8 +18,13 @@ LOG_SEVERITIES = {
 }
 
 
-class StackdriverJsonFormatter(jsonlogger.JsonFormatter):
+class JsonFormatter(jsonlogger.JsonFormatter):
     tracer = None
+
+    def __init__(self, *args, stackdriver=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tracer = None
+        self.stackdriver = stackdriver
 
     def add_fields(self, log_record, record, message_dict):
         """
@@ -30,32 +35,12 @@ class StackdriverJsonFormatter(jsonlogger.JsonFormatter):
         if record.exc_info:
             _format_message_for_exception(record)
 
-        gcp_log_record = _generate_log_record(record, stackdriver=True)
+        gcp_log_record = _generate_log_record(record, stackdriver=self.stackdriver)
 
         if self.tracer:
-            _add_span_values(self.tracer, gcp_log_record, stackdriver=True)
+            _add_span_values(self.tracer, gcp_log_record, stackdriver=self.stackdriver)
 
         log_record.update(gcp_log_record)
-        log_record.pop('exc_info', None)
-
-
-class LocalJsonFormatter(jsonlogger.JsonFormatter):
-    tracer = None
-
-    def add_fields(self, log_record, record, message_dict):
-        """
-        Add fields to JSON logger output and remove default unused fields.
-        """
-
-        if record.exc_info:
-            _format_message_for_exception(record)
-
-        json_log_record = _generate_log_record(record)
-
-        if self.tracer:
-            _add_span_values(self.tracer, json_log_record)
-
-        log_record.update(json_log_record)
         log_record.pop('exc_info', None)
 
 
@@ -114,12 +99,6 @@ def _format_message_for_exception(record):
     record.message = f"""Exception: {exception_class.__name__}({str(exception)})\nTraceback:\n{tb_str}"""
 
 
-LOGGING_FORMATS = {
-    'stackdriver': StackdriverJsonFormatter,
-    'local': LocalJsonFormatter
-}
-
-
 class JSONLoggerFactory:
 
     def __init__(self, project_name, service_name, logging_format):
@@ -136,8 +115,8 @@ class JSONLoggerFactory:
         self.service_name = service_name
 
         handler = logging.StreamHandler(sys.stdout)
-        formatter = LOGGING_FORMATS.get(logging_format)
-        handler.setFormatter(formatter())
+        stackdriver = True if logging_format == 'stackdriver' else False
+        handler.setFormatter(JsonFormatter(stackdriver=stackdriver))
 
         root_logger = logging.getLogger()
         root_logger.handlers = []

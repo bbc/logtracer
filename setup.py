@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -14,7 +14,8 @@ if __name__ == "__main__":
         long_description=long_description,
         long_description_content_type="text/markdown",
         url="https://github.com/bbc/logtracer",
-        packages=find_packages(),
+        packages=['logtracer', 'logtracer.helpers', 'logtracer.helpers.flask', 'logtracer.helpers.grpc',
+                  'logtracer.helpers.mixed', 'tests', 'examples', 'examples.flask', 'examples.grpc', 'examples.mixed'],
         classifiers=[
             "Programming Language :: Python :: 3.6",
             "Operating System :: OS Independent",

@@ -5,7 +5,7 @@ from logtracer.examples.mixed.flask_server import flask_port
 from logtracer.examples.mixed.trace import mixed_tracer
 
 logger = logger_factory.get_logger(__name__)
-logger.setLevel('DEBUG')
+logger.setLevel('INFO')
 
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 logging.getLogger('google.auth.transport.requests').setLevel(logging.WARNING)

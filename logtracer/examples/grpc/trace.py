@@ -6,4 +6,4 @@ grpc_tracer = GRPCTracer(
     post_spans_to_stackdriver_api=True,
     redacted_fields=['value1', 'nested.nestedvalue1', 'nested.doublenested.doublenestedvalue1']
 )
-grpc_tracer.set_logging_level('DEBUG')
+grpc_tracer.set_logging_level('INFO')

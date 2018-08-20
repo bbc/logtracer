@@ -12,7 +12,7 @@ app = build_app(mixed_tracer)
 flask_port = 5005
 
 logger = logger_factory.get_logger(__name__)
-logger.setLevel('DEBUG')
+logger.setLevel('INFO')
 
 channel = grpc.insecure_channel(f'localhost:{grpc_port}')
 intercept_channel = grpc.intercept_channel(channel, mixed_tracer.client_interceptor())

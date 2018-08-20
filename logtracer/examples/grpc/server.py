@@ -10,7 +10,7 @@ from logtracer.examples.grpc.trace import grpc_tracer
 ONE_DAY_IN_SECONDS = 60 * 60 * 24
 
 logger = logger_factory.get_logger('demoGRPCLogger')
-logger.setLevel('DEBUG')
+logger.setLevel('INFO')
 
 grpc_port = 50055
 

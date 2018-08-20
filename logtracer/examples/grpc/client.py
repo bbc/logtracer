@@ -60,7 +60,6 @@ def run_grpc_examples(stub):
 
 
 if __name__ == '__main__':
-    print('****** Local formatted examples with non-posted traces ******')
     channel = grpc.insecure_channel(f'localhost:{grpc_port}')
     intercept_channel = grpc.intercept_channel(channel, grpc_tracer.client_interceptor())
     stub = DemoServiceStub(intercept_channel)

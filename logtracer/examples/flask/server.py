@@ -10,7 +10,7 @@ flask_port = 5005
 
 # logging
 logger = logger_factory.get_logger(__name__)
-logger.setLevel('DEBUG')
+logger.setLevel('INFO')
 
 
 @app.route('/', methods=['GET'])

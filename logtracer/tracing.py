@@ -202,13 +202,17 @@ class Tracer:
     @property
     def memory(self):
         """
-        Thread local memory for storring the _current_ span, needed for if this class is used in a multi-threaded
+        Thread local memory for storing the _current_ span id, needed for if this class is used in a multi-threaded
         environment.
         """
+        class SpanMemory(local):
+            def __init__(self):
+                self.current_span_id = None
+                self.parent_spans = []
+
         if self._memory is None:
-            self._memory = local()
-            self._memory.current_span_id = None
-            self._memory.parent_spans = []
+            self._memory = SpanMemory()
+
         return self._memory
 
 

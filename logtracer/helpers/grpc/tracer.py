@@ -110,9 +110,7 @@ class _OutgoingInterceptor(grpc.UnaryUnaryClientInterceptor):
         metadata with the span values metadatum appended.
         """
         subspan_values = self._tracer.generate_new_traced_subspan_values()
-        metadata = []
-        if client_call_details.metadata is not None:
-            metadata = list(client_call_details.metadata)
+        metadata = list(client_call_details.metadata) if client_call_details.metadata is not None else []
         b3_metadatum = _Metadatum(key=B3_VALUES_KEY, value=json.dumps(subspan_values))
         metadata.append(b3_metadatum)
         return metadata

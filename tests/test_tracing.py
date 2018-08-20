@@ -276,21 +276,20 @@ def test_tracer_generate_new_traced_subspan_values(tracer):
 
 @patch(CLASS_PATH + '_add_tracer_to_logger_formatter', MagicMock())
 @patch(CLASS_PATH + '_verify_gcp_credentials', MagicMock())
-@patch(CLASS_PATH + 'memory', MagicMock())
 def test_tracer_memory():
     m_json_logger_factory = MagicMock(name='json_logger_factory')
     m_json_logger_factory.project_name = 'test_project_name'
     m_json_logger_factory.service_name = 'test_service_name'
     tracer = Tracer(m_json_logger_factory)
 
-    tracer.memory.test = 'test'
+    assert tracer.memory.current_span_id is None
 
     def test_threaded_memory(tracer, asserts):
-        asserts.append(tracer.memory.test == 'test')
-        rand_str = f'test{randint(100)}'
-        tracer.memory.test = rand_str
-        time.sleep(randint(2))
-        asserts.append(tracer.memory.test == rand_str)
+        asserts.append(tracer.memory.current_span_id is None)
+        rand_str = f'test{randint(0, 100)}'
+        tracer.memory.current_span_id = rand_str
+        time.sleep(randint(0, 2))
+        asserts.append(tracer.memory.current_span_id == rand_str)
 
     asserts = []
     threads = [Thread(target=test_threaded_memory, args=(tracer, asserts)) for _ in range(20)]
@@ -301,7 +300,7 @@ def test_tracer_memory():
         thread.join()
 
     assert all(asserts)
-    assert tracer.memory.test == 'test'
+    assert tracer.memory.current_span_id is None
 
 
 def test_spancontext():

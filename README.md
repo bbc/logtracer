@@ -1,17 +1,7 @@
 # Log Tracer
 > Adds distributed tracing information to logger output and sends traces to the Stackdriver Trace API.
 
-## Examples
-Examples for a Flask and a gRPC service exist in the [examples](logtracer/examples) directory.
 
-```bash
-python -m logtracer.examples.<flask or grpc or mixed>.server
-# in a separate bash environment with server still running
-python -m logtracer.examples.<flask or grpc or mixed>.client
-```
-By default these examples will have logging levels as `INFO` and will attempt to post to the Trace API using the `bbc-connected-data` GCP credentials.
-If your account does not have access to this project or you haven't run the [authentication command](#stackdriver-trace-api) then the examples will fail. 
-You may clone the examples and change logging levels to `DEBUG` for more verbosity or pass `post_spans_to_stackdriver_api=False` in to the `Tracer` initialisations to disable posting the spans to the Trace API.  
 ## Usage
 ### Pre Setup
 Install: `pip install git+https://github.com/bbc/logtracer@[BRANCH or COMMIT_HASH or TAG_NAME]`.
@@ -182,6 +172,17 @@ Trace API and they are linked to the logs by tracing metadata as shown in the im
 ![example trace](logtracer/examples/example_trace.png)
 
 
+## Examples
+Examples for a Flask and a gRPC service exist in the [examples](logtracer/examples) directory.
+
+```bash
+python -m logtracer.examples.<flask or grpc or mixed>.server
+# in a separate bash environment with server still running
+python -m logtracer.examples.<flask or grpc or mixed>.client
+```
+By default these examples will have logging levels as `INFO` and will attempt to post to the Trace API using the `bbc-connected-data` GCP credentials.
+If your account does not have access to this project or you haven't run the [authentication command](#stackdriver-trace-api) then the examples will fail. 
+You may clone the examples and change logging levels to `DEBUG` for more verbosity or pass `post_spans_to_stackdriver_api=False` in to the `Tracer` initialisations to disable posting the spans to the Trace API.  
 
 ## Notes
 \* Some fields may not be parsed as expected, this is likely due to the version of the 

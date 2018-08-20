@@ -70,6 +70,7 @@ logger.info('In sub span')
 tracer.start_traced_subspan('example-sub-sub-span')
 logger.info('In sub sub span')
 
+# use wrapped requests library which injects tracing headers
 tracer.requests.get('http://example-traced-get.com')
 
 tracer.end_traced_subspan(exclude_from_posting=False)

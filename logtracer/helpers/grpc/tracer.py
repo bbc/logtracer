@@ -7,13 +7,20 @@ from grpc._interceptor import _ClientCallDetails
 from logtracer.helpers.grpc.redact import redact_request
 from logtracer.tracing import Tracer
 
-B3_VALUE_KEY = 'b3-values'
+B3_VALUES_KEY = 'b3-values'
 
 
 class GRPCTracer(Tracer):
 
     def __init__(self, json_logger_factory, post_spans_to_stackdriver_api=False, redacted_fields=None):
-        """Class to manage gRPC client and server interceptors."""
+        """
+        Class to manage gRPC client and server interceptors.
+
+        Arguments:
+            json_logger_factory (logtracer.jsonlog.JSONLoggerFactory)
+            post_spans_to_stackdriver_api (bool)
+            redacted_fields ([str,]): list of fields (may be nested) to redact from incoming request log entry
+        """
         super().__init__(json_logger_factory, post_spans_to_stackdriver_api)
         self.redacted_fields = redacted_fields if redacted_fields is not None else []
 
@@ -42,9 +49,7 @@ class _IncomingInterceptor(grpc.ServerInterceptor):
                 redacted_request_str = f"\nrequest: {redact_request(request, self._tracer.redacted_fields)}" \
                     if request.ListFields() else ''
 
-                self._tracer.logger.info(
-                    f'{handler_call_details.method} - received gRPC call {redacted_request_str}'
-                )
+                self._tracer.logger.info(f'{handler_call_details.method} - received gRPC call {redacted_request_str}')
 
                 exception_raised = False
                 try:
@@ -71,7 +76,7 @@ class _IncomingInterceptor(grpc.ServerInterceptor):
         """Get the span values from an inbound call."""
         b3_values = {}
         for metadatum in handler_call_details.invocation_metadata:
-            if metadatum.key == B3_VALUE_KEY:
+            if metadatum.key == B3_VALUES_KEY:
                 b3_values = json.loads(metadatum.value)
         return b3_values
 
@@ -108,7 +113,7 @@ class _OutgoingInterceptor(grpc.UnaryUnaryClientInterceptor):
         metadata = []
         if client_call_details.metadata is not None:
             metadata = list(client_call_details.metadata)
-        b3_metadatum = _Metadatum(key=B3_VALUE_KEY, value=json.dumps(subspan_values))
+        b3_metadatum = _Metadatum(key=B3_VALUES_KEY, value=json.dumps(subspan_values))
         metadata.append(b3_metadatum)
         return metadata
 

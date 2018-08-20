@@ -11,10 +11,9 @@ def test_FlaskTracer_start_span_and_log_request_before(m_request):
     m_request.method = 'test_method'
     m_request.path = 'test_path'
     m_request.url = 'test_url'
-    m_tracer = MagicMock()
-    flask_tracer = FlaskTracer(m_tracer)
+    m_logger_factory = MagicMock()
+    flask_tracer = FlaskTracer(m_logger_factory)
     flask_tracer.start_traced_span = MagicMock()
-    flask_tracer.logger = MagicMock()
 
     execute_before_request = flask_tracer.start_span_and_log_request_before()
     execute_before_request()
@@ -30,9 +29,8 @@ def test_FlaskTracer_start_span_and_log_request_before(m_request, success_status
     m_response = MagicMock()
     m_response.status_code = success_status_code
     m_response.status = 'test_status'
-    m_tracer = MagicMock()
-    flask_tracer = FlaskTracer(m_tracer)
-    flask_tracer.logger = MagicMock()
+    m_logger_factory = MagicMock()
+    flask_tracer = FlaskTracer(m_logger_factory)
 
     execute_after_request = flask_tracer.log_response_after()
     execute_after_request(m_response)
@@ -48,9 +46,8 @@ def test_FlaskTracer_log_response_after_error(m_request, error_status_code):
     m_response = MagicMock()
     m_response.status_code = error_status_code
     m_response.status = 'test_status'
-    m_tracer = MagicMock()
-    flask_tracer = FlaskTracer(m_tracer)
-    flask_tracer.logger = MagicMock()
+    m_logger_factory = MagicMock()
+    flask_tracer = FlaskTracer(m_logger_factory)
 
     execute_after_request = flask_tracer.log_response_after()
     execute_after_request(m_response)
@@ -62,10 +59,9 @@ def test_FlaskTracer_log_response_after_error(m_request, error_status_code):
 @patch('logtracer.helpers.flask.tracer._is_path_excluded')
 def test_FlaskTracer_close_span_on_teardown(m_path_exclude):
     m_path_exclude.return_value = False
-    m_tracer = MagicMock()
-    flask_tracer = FlaskTracer(m_tracer)
+    m_logger_factory = MagicMock()
+    flask_tracer = FlaskTracer(m_logger_factory)
     flask_tracer.end_traced_span = MagicMock()
-    flask_tracer.logger = MagicMock()
 
     execute_on_teardown = flask_tracer.close_span_and_post_on_teardown(['excluded_routes'], ['excluded_partial_routes'])
     execute_on_teardown(MagicMock())
@@ -77,10 +73,9 @@ def test_FlaskTracer_close_span_on_teardown(m_path_exclude):
 @patch('logtracer.helpers.flask.tracer._is_path_excluded')
 def test_FlaskTracer_close_span_on_teardown_exclude_path(m_path_exclude):
     m_path_exclude.return_value = True
-    m_tracer = MagicMock()
-    flask_tracer = FlaskTracer(m_tracer)
+    m_logger_factory = MagicMock()
+    flask_tracer = FlaskTracer(m_logger_factory)
     flask_tracer.end_traced_span = MagicMock()
-    flask_tracer.logger = MagicMock()
 
     execute_on_teardown = flask_tracer.close_span_and_post_on_teardown(['excluded_routes'], ['excluded_partial_routes'])
     execute_on_teardown(MagicMock())
@@ -90,10 +85,10 @@ def test_FlaskTracer_close_span_on_teardown_exclude_path(m_path_exclude):
 
 
 def test_FlaskTracer_log_exception():
-    m_tracer = MagicMock()
-    m_exception_handler, m_exception, m_response, m_tracer.logger = MagicMock(), MagicMock(), MagicMock(), MagicMock()
+    m_logger_factory = MagicMock()
+    m_exception_handler, m_exception, m_response, m_logger_factory.logger = MagicMock(), MagicMock(), MagicMock(), MagicMock()
     m_exception_handler.return_value = m_response
-    flask_tracer = FlaskTracer(m_tracer)
+    flask_tracer = FlaskTracer(m_logger_factory)
 
     wrapper = flask_tracer.log_exception(m_exception_handler)
     response = wrapper(m_exception)

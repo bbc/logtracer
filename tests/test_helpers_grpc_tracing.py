@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch, call
 import pytest
 from grpc._cython.cygrpc import _Metadatum
 
-from logtracer.helpers.grpc.tracer import GRPCTracer, _IncomingInterceptor, _OutgoingInterceptor, B3_VALUES_KEY, \
+from logtracer.helpers.grpc.tracing import GRPCTracer, _IncomingInterceptor, _OutgoingInterceptor, B3_VALUES_KEY, \
     _grpc_status_from_context
 
 
@@ -22,9 +22,9 @@ def test_IncomingInterceptor_init():
     assert _IncomingInterceptor(m_tracer)._tracer == m_tracer
 
 
-@patch('logtracer.helpers.grpc.tracer._wrap_rpc_behavior', MagicMock(side_effect=lambda handler, fn: fn))
-@patch('logtracer.helpers.grpc.tracer.redact_request', return_value='test_redacted_request')
-@patch('logtracer.helpers.grpc.tracer._grpc_status_from_context', return_value='.test_grpc_status')
+@patch('logtracer.helpers.grpc.tracing._wrap_rpc_behavior', MagicMock(side_effect=lambda handler, fn: fn))
+@patch('logtracer.helpers.grpc.tracing.redact_request', return_value='test_redacted_request')
+@patch('logtracer.helpers.grpc.tracing._grpc_status_from_context', return_value='.test_grpc_status')
 def test_IncomingInterceptor_intercept_service(m_grpc_status, m_redact):
     m_tracer = MagicMock()
     interceptor = _IncomingInterceptor(m_tracer)
@@ -53,9 +53,9 @@ def test_IncomingInterceptor_intercept_service(m_grpc_status, m_redact):
     interceptor._tracer.end_traced_span.assert_called_with(exclude_from_posting=False)
 
 
-@patch('logtracer.helpers.grpc.tracer._wrap_rpc_behavior', MagicMock(side_effect=lambda handler, fn: fn))
-@patch('logtracer.helpers.grpc.tracer.redact_request', return_value='test_redacted_request')
-@patch('logtracer.helpers.grpc.tracer._grpc_status_from_context', return_value='.test_grpc_status')
+@patch('logtracer.helpers.grpc.tracing._wrap_rpc_behavior', MagicMock(side_effect=lambda handler, fn: fn))
+@patch('logtracer.helpers.grpc.tracing.redact_request', return_value='test_redacted_request')
+@patch('logtracer.helpers.grpc.tracing._grpc_status_from_context', return_value='.test_grpc_status')
 def test_IncomingInterceptor_intercept_service_exception(m_grpc_status, m_redact):
     class TestException(Exception):
         pass

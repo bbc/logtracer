@@ -1,5 +1,5 @@
-from logtracer.helpers.flask.tracer import FlaskTracer
-from logtracer.helpers.grpc.tracer import GRPCTracer
+from logtracer.helpers.flask.tracing import FlaskTracer
+from logtracer.helpers.grpc.tracing import GRPCTracer
 
 
 class MixedTracer(GRPCTracer, FlaskTracer):

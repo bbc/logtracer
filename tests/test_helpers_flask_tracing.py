@@ -2,10 +2,10 @@ from unittest.mock import MagicMock, patch
 
 from pytest import mark
 
-from logtracer.helpers.flask.tracer import FlaskTracer
+from logtracer.helpers.flask.tracing import FlaskTracer
 
 
-@patch('logtracer.helpers.flask.tracer.request')
+@patch('logtracer.helpers.flask.tracing.request')
 def test_FlaskTracer_start_span_and_log_request_before(m_request):
     m_request.headers = 'test_headers'
     m_request.method = 'test_method'
@@ -22,7 +22,7 @@ def test_FlaskTracer_start_span_and_log_request_before(m_request):
     flask_tracer.logger.info.assert_called_with('test_method - test_url')
 
 
-@patch('logtracer.helpers.flask.tracer.request')
+@patch('logtracer.helpers.flask.tracing.request')
 @mark.parametrize('success_status_code', [200, 201, 300, 301])
 def test_FlaskTracer_start_span_and_log_request_before(m_request, success_status_code):
     m_request.url = 'test_url'
@@ -39,7 +39,7 @@ def test_FlaskTracer_start_span_and_log_request_before(m_request, success_status
     assert not flask_tracer.logger.error.called
 
 
-@patch('logtracer.helpers.flask.tracer.request')
+@patch('logtracer.helpers.flask.tracing.request')
 @mark.parametrize('error_status_code', [400, 401, 500, 501])
 def test_FlaskTracer_log_response_after_error(m_request, error_status_code):
     m_request.url = 'test_url'
@@ -56,7 +56,7 @@ def test_FlaskTracer_log_response_after_error(m_request, error_status_code):
     assert not flask_tracer.logger.info.called
 
 
-@patch('logtracer.helpers.flask.tracer._is_path_excluded')
+@patch('logtracer.helpers.flask.tracing._is_path_excluded')
 def test_FlaskTracer_close_span_on_teardown(m_path_exclude):
     m_path_exclude.return_value = False
     m_logger_factory = MagicMock()
@@ -70,7 +70,7 @@ def test_FlaskTracer_close_span_on_teardown(m_path_exclude):
     flask_tracer.end_traced_span.assert_called_with(False)
 
 
-@patch('logtracer.helpers.flask.tracer._is_path_excluded')
+@patch('logtracer.helpers.flask.tracing._is_path_excluded')
 def test_FlaskTracer_close_span_on_teardown_exclude_path(m_path_exclude):
     m_path_exclude.return_value = True
     m_logger_factory = MagicMock()

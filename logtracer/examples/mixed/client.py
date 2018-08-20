@@ -1,8 +1,8 @@
 import logging
 
-from examples.mixed.log import logger_factory
-from examples.mixed.flask_server import flask_port
-from examples.mixed.trace import mixed_tracer
+from logtracer.examples.mixed.log import logger_factory
+from logtracer.examples.mixed.flask_server import flask_port
+from logtracer.examples.mixed.trace import mixed_tracer
 
 logger = logger_factory.get_logger(__name__)
 logger.setLevel('DEBUG')

@@ -1,12 +1,12 @@
 import grpc
 from flask import jsonify
 
-from examples.flask.flask_factory import build_app
-from examples.grpc.resources.grpc_demo_pb2 import EmptyMessage
-from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
-from examples.grpc.server import grpc_port
-from examples.mixed.log import logger_factory
-from examples.mixed.trace import mixed_tracer
+from logtracer.examples.flask.flask_factory import build_app
+from logtracer.examples.grpc.resources.grpc_demo_pb2 import EmptyMessage
+from logtracer.examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
+from logtracer.examples.grpc.server import grpc_port
+from logtracer.examples.mixed.log import logger_factory
+from logtracer.examples.mixed.trace import mixed_tracer
 
 app = build_app(mixed_tracer, post_spans_to_stackdriver_api=False)
 flask_port = 5005

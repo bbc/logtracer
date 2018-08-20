@@ -2,7 +2,7 @@
 > Adds distributed tracing information to logger output and sends traces to the Stackdriver Trace API.
 
 ## Examples
-Examples for a Flask and a gRPC service exist in the [examples](examples) directory.
+Examples for a Flask and a gRPC service exist in the [examples](logtracer/examples) directory.
 
 ```bash
 python -m logtracer.examples
@@ -177,7 +177,7 @@ from the logs. Instead, these have to be posted separately. This package does th
 Python client. Calls to this are not of negligible time, so they are made in a new thread to ensure requests are not blocked. Traces can be viewed in the
 Trace API and they are linked to the logs by tracing metadata as shown in the image below.
 
-![example trace](examples/example_trace.png)
+![example trace](logtracer/examples/example_trace.png)
 
 
 

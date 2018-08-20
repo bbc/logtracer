@@ -1,7 +1,7 @@
 from flask import jsonify, make_response
 
-from examples.flask.flask_factory import build_app
-from examples.flask.log import logger_factory
+from logtracer.examples.flask.flask_factory import build_app
+from logtracer.examples.flask.log import logger_factory
 from examples.flask.trace import flask_tracer
 
 # flask

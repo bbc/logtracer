@@ -3,8 +3,8 @@ from concurrent import futures
 
 import grpc
 
-from examples.grpc.log import logger_factory
-from examples.grpc.resources import grpc_demo_pb2_grpc, grpc_demo_pb2
+from logtracer.examples.grpc.log import logger_factory
+from logtracer.examples.grpc.resources import grpc_demo_pb2, grpc_demo_pb2_grpc
 from examples.grpc.trace import grpc_tracer
 
 ONE_DAY_IN_SECONDS = 60 * 60 * 24

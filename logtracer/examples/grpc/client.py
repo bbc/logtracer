@@ -4,9 +4,9 @@ import time
 import grpc
 from grpc._channel import _Rendezvous
 
-from examples.grpc.resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
-from examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
-from examples.grpc.server import grpc_port
+from logtracer.examples.grpc.resources.grpc_demo_pb2 import DemoMessage, EmptyMessage, NestedMessage, DoubleNestedMessage
+from logtracer.examples.grpc.resources.grpc_demo_pb2_grpc import DemoServiceStub
+from logtracer.examples.grpc.server import grpc_port
 from examples.grpc.trace import grpc_tracer
 
 logging.getLogger('werkzeug').setLevel(logging.WARNING)

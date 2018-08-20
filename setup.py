@@ -15,7 +15,8 @@ if __name__ == "__main__":
         long_description_content_type="text/markdown",
         url="https://github.com/bbc/logtracer",
         packages=['logtracer', 'logtracer.helpers', 'logtracer.helpers.flask', 'logtracer.helpers.grpc',
-                  'logtracer.helpers.mixed', 'tests', 'examples', 'examples.flask', 'examples.grpc', 'examples.mixed'],
+                  'logtracer.helpers.mixed', 'logtracer.examples', 'logtracer.examples.grpc',
+                  'logtracer.examples.flask', 'logtracer.examples.mixed'],
         classifiers=[
             "Programming Language :: Python :: 3.6",
             "Operating System :: OS Independent",

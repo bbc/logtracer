@@ -1,4 +1,4 @@
-from examples.grpc.log import logger_factory
+from logtracer.examples.grpc.log import logger_factory
 from logtracer.helpers.grpc.tracing import GRPCTracer
 
 grpc_tracer = GRPCTracer(

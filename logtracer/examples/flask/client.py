@@ -1,7 +1,7 @@
 import logging
 
-from examples.flask.log import logger_factory
-from examples.flask.server import flask_port
+from logtracer.examples.flask.log import logger_factory
+from logtracer.examples.flask.server import flask_port
 from examples.flask.trace import flask_tracer
 
 logger = logger_factory.get_logger(__name__)

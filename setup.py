@@ -13,7 +13,7 @@ if __name__ == "__main__":
                     "Trace API.",
         long_description=long_description,
         long_description_content_type="text/markdown",
-        url="https://github.com/bbc/logtrace",
+        url="https://github.com/bbc/logtracer",
         packages=find_packages(),
         classifiers=[
             "Programming Language :: Python :: 3.6",
@@ -22,7 +22,6 @@ if __name__ == "__main__":
         install_requires=[
             'python-json-logger==0.1.9',
             'google-cloud-trace==0.19.0',
-            'protobuf==3.6.0',
             'requests==2.19.1'
         ],
         test_suite="tests",

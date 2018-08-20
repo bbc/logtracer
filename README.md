@@ -4,12 +4,13 @@
 ## Examples
 Examples for a Flask and a gRPC service exist in the [examples](examples) directory.
 
-TODO: running instructions
-
+```bash
+python -m logtracer.examples
+```
 ## Usage
 ### Pre Setup
 Install: `pip install git+https://github.com/bbc/logtracer@[BRANCH or COMMIT_HASH or TAG_NAME]`.
-It is good practise to pin the version or your code may break if this package is updated.
+It is good practice to pin the version or your code may break if this package is updated.
 
 
 NOTE ABOUT CYCLIC IMPORTING - use separate file

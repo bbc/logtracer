@@ -5,19 +5,19 @@
 Examples for a Flask and a gRPC service exist in the [examples](logtracer/examples) directory.
 
 ```bash
-python -m logtracer.examples
+python -m logtracer.examples.<flask or grpc or mixed>.server
+# in a separate bash environment with server still running
+python -m logtracer.examples.<flask or grpc or mixed>.client
 ```
+By default these examples will have logging levels as `INFO` and will attempt to post to the Trace API using the `bbc-connected-data` GCP credentials.
+If your account does not have access to this project or you haven't run the [authentication command](#stackdriver-trace-api) then the examples will fail. 
 ## Usage
 ### Pre Setup
 Install: `pip install git+https://github.com/bbc/logtracer@[BRANCH or COMMIT_HASH or TAG_NAME]`.
 It is good practice to pin the version or your code may break if this package is updated.
 
-
-NOTE ABOUT CYCLIC IMPORTING - use separate file
-
 ### JSON Logging 
-Before any logs are written, a `JSONLoggingFactory` instance must be created. This is used to manage logging, with
-optional tracing, across the package.
+Before any logs are written, a `JSONLoggingFactory` instance must be created. This is used to manage logging, with optional tracing, across the package.
 
 ```python
 # app/log.py
@@ -48,7 +48,7 @@ it is recommended you do this using an environmental variable as above.
 ### Tracing 
 By default tracing functionality is disabled, you may use the logging functionality without any tracing functionality.
 
-There are three ways to implement tracing, depending on your use case:
+There are four ways to implement tracing, depending on your use case:
 #### `Tracer` class
 Use this if you are not using Flask or gRPC, or if you would like to use the library for purposes other than to trace individual requests.
 Initialise the Tracer class _once_ in your app, and it is recommended you do it in a separate file to avoid cyclic import errors.
@@ -109,20 +109,20 @@ with SpanContext(tracer, headers, 'example-span'):
             tracer.requests.get('http://example-traced-get.com')
 
 ```
-The `Tracer` class (and therefore the `FlaskTracer` and `GRPCTracer` class) has a `requests` property. This wraps the standard
+The `Tracer` class (and therefore the `FlaskTracer`, `GRPCTracer` and `MixedTracer` classes) have a `requests` property. This wraps the standard
 requests library to automatically inject the span values into any outgoing `get`, `post`, `update`, etc. requests.
 
-Both the `FlaskTracer` and `GRPCTracer` class inherit from the `Tracer` class and wrap these features to make implementation simpler.
+The `FlaskTracer`, `GRPCTracer` and `MixedTracer` classes inherit from the `Tracer` class, and wrap these features to make implementation simpler.
    
 #### `MixedTracer` class
-See [MixedTracer](logtracer/helpers/mixed), use with a Flask app that makes calls to a gRPC service. Inherits from both
+See [MixedTracer](logtracer/helpers/mixed), use with a Flask app that calls gRPC or HTTP services. Inherits from both
 `GRPCTracer` and `FlaskTracer`.
 
 #### `FlaskTracer` class
-See [FlaskTracer](logtracer/helpers/flask), use with a pure Flask app.
+See [FlaskTracer](logtracer/helpers/flask), use with a Flask app that calls other HTTP services.
 
 #### `GRPCTracer` class
-See [GRPCTracer](logtracer/helpers/grpc), use with a gRPC app.
+See [GRPCTracer](logtracer/helpers/grpc), use with a gRPC app that calls other gRPC or HTTP services.
 
 #### Stackdriver Trace API
 If you choose to enable posting trace information to the API  _locally_ (unadvised unless you are specifically testing functionality of the Trace API), 
@@ -132,7 +132,8 @@ gcloud auth application-default login
 ```
 If the `post_spans_to_stackdriver_api` argument to the `Tracer` instance is `True`, and GCP Credentials are not found, an exception will be raised.
 
-If you deploying to a Kubernetes container, then GCP credentials should be retrieved automatically.
+If you are deploying a an image onto a Kubernetes cluster, then GCP credentials should be retrieved automatically, *unless you have set up another service account to be used*. 
+If you have configured another service account then make sure to add the relevant roles to the service account.
 
 ## Purpose
 

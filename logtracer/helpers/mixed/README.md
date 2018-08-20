@@ -2,7 +2,7 @@
 >Utility for integration with a Flask app that calls a gRPC app.
 
 ## Implementation Guide
-Before following these instructions, make sure to follow the instructions in the [main readme](../../../README.md).
+Before following these instructions, make sure to read through the [main readme](../../../README.md) thoroughly.
 Example code exists in `/examples`, look at these for working implementations.
 Once implemented, inbound requests will be logged on opening and closing of the connection and the tracing information will be sent to the Stackdriver Trace API (if desired).
 Exceptions tracebacks and responses will be logged too so avoid using `logger.exception(e)` in your gRPC error handlers as this should be handled by this library.

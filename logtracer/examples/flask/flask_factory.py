@@ -1,6 +1,7 @@
 from flask import Flask
 
-def build_app(flask_tracer, post_spans_to_stackdriver_api=False):
+
+def build_app(flask_tracer):
     app = Flask('demoFlaskApp')
 
     app.before_request(flask_tracer.start_span_and_log_request_before())

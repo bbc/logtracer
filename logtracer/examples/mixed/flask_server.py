@@ -8,7 +8,7 @@ from logtracer.examples.grpc.server import grpc_port
 from logtracer.examples.mixed.log import logger_factory
 from logtracer.examples.mixed.trace import mixed_tracer
 
-app = build_app(mixed_tracer, post_spans_to_stackdriver_api=False)
+app = build_app(mixed_tracer)
 flask_port = 5005
 
 logger = logger_factory.get_logger(__name__)

@@ -2,10 +2,10 @@ from flask import jsonify, make_response
 
 from logtracer.examples.flask.flask_factory import build_app
 from logtracer.examples.flask.log import logger_factory
-from examples.flask.trace import flask_tracer
+from logtracer.examples.flask.trace import flask_tracer
 
 # flask
-app = build_app(flask_tracer, post_spans_to_stackdriver_api=False)
+app = build_app(flask_tracer)
 flask_port = 5005
 
 # logging

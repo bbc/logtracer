@@ -48,6 +48,10 @@ class FlaskTracer(Tracer):
         For use with flask `teardown_request()` callback, see readme for example usage.
         """
 
+        if (excluded_routes and not isinstance(excluded_routes, list)) or \
+                (excluded_partial_routes and not isinstance(excluded_partial_routes, list)):
+            raise ValueError('Excluded routes must be a list.')
+
         def execute_on_teardown(_):
             self.end_traced_span(_is_path_excluded(excluded_routes, excluded_partial_routes))
 
@@ -65,5 +69,3 @@ class FlaskTracer(Tracer):
             return response
 
         return wrapper
-
-

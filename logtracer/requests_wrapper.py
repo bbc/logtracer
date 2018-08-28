@@ -14,7 +14,7 @@ class RequestsWrapper:
                 headers = deepcopy(kwargs.get('headers', {}))
                 headers.update(self.tracer.generate_new_traced_subspan_values())
                 kwargs['headers'] = headers
-                self.tracer.logger.info(f'{method.upper()} - {args[0]}')
+                self.tracer.logger.info(f'OUTBOUND {method.upper()} - {args[0]}')
                 response = getattr(requests, method)(*args, **kwargs)
                 self.tracer.logger.info(f'{response.status_code} {response.reason} - {args[0]}')
                 return response

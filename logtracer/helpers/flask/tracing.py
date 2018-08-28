@@ -37,9 +37,9 @@ class FlaskTracer(Tracer):
 
         return execute_after_request
 
-    def close_span_and_post_on_teardown(self, excluded_routes=None, excluded_partial_routes=None):
+    def end_span_and_post_on_teardown(self, excluded_routes=None, excluded_partial_routes=None):
         """
-        Close the span when the request is torn down (finished).
+        End the span when the request is torn down (finished).
 
         Arguments:
             excluded_routes [str,]:

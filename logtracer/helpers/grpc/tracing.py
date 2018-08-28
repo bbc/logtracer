@@ -74,6 +74,7 @@ class _IncomingInterceptor(grpc.ServerInterceptor):
     @staticmethod
     def _retrieve_span_values_from_incoming_call(handler_call_details):
         """Get the span values from an inbound call."""
+        """Get the span values from an inbound call."""
         b3_values = {}
         for metadatum in handler_call_details.invocation_metadata:
             if metadatum.key == B3_VALUES_KEY:

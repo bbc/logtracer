@@ -1,9 +1,11 @@
 from datetime import datetime
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 from logtracer.exceptions import SpanNotStartedError
 from logtracer.jsonlog import JsonFormatter, _generate_log_record, _add_span_values, _format_message_for_exception, \
-    JSONLoggerFactory
+    JSONLoggerFactory, Formatters
 
 MODULE_PATH = 'logtracer.jsonlog.'
 
@@ -176,9 +178,22 @@ test_formatted_tb"""
     assert m_record.message == expected_message
 
 
-def test_JsonLoggerFactory():
-    json_logger_factory = JSONLoggerFactory('test_project_name', 'test_service_name', 'test')
+def test_JsonLoggerFactory_stackdriver():
+    json_logger_factory = JSONLoggerFactory('test_project_name', 'test_service_name', Formatters.stackdriver)
 
     logger = json_logger_factory.get_logger('test_logger_name')
     assert logger.name == 'test_service_name.test_logger_name'
     assert isinstance(logger.root.handlers[0].formatter, JsonFormatter)
+
+
+def test_JsonLoggerFactory_local():
+    json_logger_factory = JSONLoggerFactory('test_project_name', 'test_service_name', Formatters.local)
+
+    logger = json_logger_factory.get_logger('test_logger_name')
+    assert logger.name == 'test_service_name.test_logger_name'
+    assert isinstance(logger.root.handlers[0].formatter, JsonFormatter)
+
+
+def test_JsonLoggerFactory_string_formatter_fail():
+    with pytest.raises(ValueError):
+        JSONLoggerFactory('test_project_name', 'test_service_name', 'local')

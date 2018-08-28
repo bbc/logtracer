@@ -2,6 +2,7 @@ import logging
 import sys
 import traceback
 from datetime import datetime
+from enum import Enum
 
 from pythonjsonlogger import jsonlogger
 
@@ -16,6 +17,11 @@ LOG_SEVERITIES = {
     'ERROR': 'ERROR',
     'EXCEPTION': 'ERROR'
 }
+
+
+class Formatters(Enum):
+    local = 'local'
+    stackdriver = 'stackdriver'
 
 
 class JsonFormatter(jsonlogger.JsonFormatter):
@@ -109,13 +115,16 @@ class JSONLoggerFactory:
         Arguments:
             project_name (str): name of your GCP project
             service_name (str): name of your app
-            logging_format (str): name of platform (for log formatting)
+            logging_format (Formatters): enum of platform for log formatting
         """
         self.project_name = project_name
         self.service_name = service_name
 
+        if not isinstance(logging_format, Formatters):
+            raise ValueError('Logging format must be from Formatters enum')
+
         handler = logging.StreamHandler(sys.stdout)
-        stackdriver = True if logging_format == 'stackdriver' else False
+        stackdriver = True if logging_format == Formatters.stackdriver else False
         handler.setFormatter(JsonFormatter(stackdriver=stackdriver))
 
         root_logger = logging.getLogger()

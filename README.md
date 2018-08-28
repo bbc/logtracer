@@ -12,15 +12,16 @@ Before any logs are written, a `JSONLoggingFactory` instance must be created. Th
 
 ```python
 # app/log.py
-from logtracer.jsonlog import JSONLoggerFactory
+from logtracer.jsonlog import JSONLoggerFactory, Formatters
 import os 
 
 project_name = 'bbc-connected-data'
 service_name = 'demoApp'
 
 logging_format = os.getenv('LOGGING_FORMAT', 'local')
-
-logger_factory = JSONLoggerFactory(project_name, service_name, logging_format)
+logger_factory = JSONLoggerFactory(project_name, service_name, Formatters[logging_format])
+# or without env variable
+# logger_factory = JSONLoggerFactory(project_name, service_name, Formatters.local)
 logger = logger_factory.get_logger(__name__)
 logger.setLevel('DEBUG')
 ```

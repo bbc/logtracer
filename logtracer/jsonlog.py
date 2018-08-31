@@ -131,7 +131,9 @@ class JSONLoggerFactory:
         root_logger.handlers = []
         root_logger.addHandler(handler)
 
-    def get_logger(self, module_name=''):
+    def get_logger(self, module_name='', level='INFO'):
         """Use this function to get the logger throughout your app."""
         module_name = f".{module_name}" if module_name else module_name
-        return logging.getLogger(f'{self.service_name}{module_name}')
+        logger = logging.getLogger(f'{self.service_name}{module_name}')
+        logger.setLevel(level)
+        return logger

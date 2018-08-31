@@ -70,8 +70,8 @@ def exception_handler(e):
 
 ### Tracing Outbound Requests
 
-#### HTTP
-To trace outbound HTTP requests, use the wrapped `requests` library included with the tracer:
+#### HTTP 
+To trace outbound HTTP requests to another service with `logtracer` installed, use the wrapped `requests` library included with the tracer:
 
 ```python
 from app.trace import flask_tracer
@@ -84,5 +84,35 @@ flask_tracer.requests.post('http://example-post.com', data={'data':'test'})
 ...
 ```
 
+#### HTTP (to a service without `logtracer`)
+
+```python
+from app.trace import flask_tracer
+
+...
+
+flask_tracer.unsupported_requests.get('http://example-get.com')
+flask_tracer.unsupported_requests.post('http://example-post.com', data={'data':'test'})
+
+...
+```
+
 #### GRPC
 To trace an outgoing gRPC request, use the [Mixed Tracer](../mixed) class instead.
+
+#### Other
+To trace anything else, use the `SubSpanContext`.
+```python
+from app.trace import flask_tracer
+from app.log import logger_factory
+from logtracer.tracing import SubSpanContext
+
+...
+
+logger = logger_factory.get_logger(__name__)
+
+logger.info('Outside of a subspan')
+with SubSpanContext(flask_tracer, 'example-span'):
+    logger.info('In a subspan, trace a function or anything else here.')
+
+```

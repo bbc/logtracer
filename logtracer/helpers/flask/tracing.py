@@ -3,7 +3,7 @@ import functools
 from flask import request
 
 from logtracer.helpers.flask.path_exclusion import _is_path_excluded
-from logtracer.tracing import Tracer
+from logtracer.tracing.tracer import Tracer
 
 
 class FlaskTracer(Tracer):

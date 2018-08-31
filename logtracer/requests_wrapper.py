@@ -23,3 +23,26 @@ class RequestsWrapper:
 
         for method in request_methods:
             setattr(self, method, wrapped_request(method))
+
+
+class UnsupportedRequestsWrapper:
+    def __init__(self, tracer):
+        """Wraps the requests library to automatically attach tracing information to outgoing headers."""
+        from logtracer.tracing import SubSpanContext
+
+        self.tracer = tracer
+        request_methods = [method for method in dir(requests.api) if not method.startswith('_')]
+
+        def wrapped_request(method):
+            def wrapper(*args, **kwargs):
+                url = args[0]
+                with SubSpanContext(tracer, url):
+                    self.tracer.logger.info(f'OUTBOUND {method.upper()} - {url}')
+                    response = getattr(requests, method)(*args, **kwargs)
+                    self.tracer.logger.info(f'{response.status_code} {response.reason} - {url}')
+                return response
+
+            return wrapper
+
+        for method in request_methods:
+            setattr(self, method, wrapped_request(method))

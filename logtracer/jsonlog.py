@@ -7,7 +7,7 @@ from enum import Enum
 from pythonjsonlogger import jsonlogger
 
 from logtracer.exceptions import SpanNotStartedError
-from logtracer.tracing import B3_SPAN_ID, B3_TRACE_ID
+from logtracer.tracing.tracer import B3_SPAN_ID, B3_TRACE_ID
 
 LOG_SEVERITIES = {
     'DEBUG': 'DEBUG',

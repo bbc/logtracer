@@ -1,15 +1,12 @@
-import os
-import time
-from binascii import hexlify
 from threading import Thread, local
 
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud.trace_v2 import TraceServiceClient
-from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
 
 from logtracer.exceptions import StackDriverAuthError, SpanNotStartedError
-from logtracer.requests_wrapper import RequestsWrapper
+from logtracer.requests_wrapper import RequestsWrapper, UnsupportedRequestsWrapper
+from logtracer.tracing._utils import post_span, get_timestamp, truncate_str, generate_identifier
 
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
 TRACE_LEN = 32
@@ -51,6 +48,7 @@ class Tracer:
         self.service_name = json_logger_factory.service_name
         self.logger = json_logger_factory.get_logger(__name__)
         self.requests = RequestsWrapper(self)
+        self.unsupported_requests = UnsupportedRequestsWrapper(self)
         self.stackdriver_trace_client = None
 
         self._spans = {}
@@ -94,16 +92,16 @@ class Tracer:
             span_name (str): Path of the endpoint of the incoming request.
         """
         span_values = {
-            B3_TRACE_ID: incoming_headers.get(B3_TRACE_ID) or _generate_identifier(TRACE_LEN),
+            B3_TRACE_ID: incoming_headers.get(B3_TRACE_ID) or generate_identifier(TRACE_LEN),
             B3_PARENT_SPAN_ID: incoming_headers.get(B3_PARENT_SPAN_ID),
-            B3_SPAN_ID: incoming_headers.get(B3_SPAN_ID) or _generate_identifier(SPAN_LEN),
+            B3_SPAN_ID: incoming_headers.get(B3_SPAN_ID) or generate_identifier(SPAN_LEN),
             B3_SAMPLED: incoming_headers.get(B3_SAMPLED),
             B3_FLAGS: incoming_headers.get(B3_FLAGS)
         }
 
         span_id = span_values[B3_SPAN_ID]
         self._spans[span_id] = {
-            "start_timestamp": _get_timestamp(),
+            "start_timestamp": get_timestamp(),
             "display_name": f'{self.service_name}:{span_name}',
             "child_span_count": 0,
             "values": span_values
@@ -148,7 +146,7 @@ class Tracer:
         if self._post_spans_to_stackdriver_api and not exclude_from_posting:
             span_values = self.current_span['values']
 
-            end_timestamp = _get_timestamp()
+            end_timestamp = get_timestamp()
             if self._post_spans_to_stackdriver_api:
                 name = self.stackdriver_trace_client.span_path(self.project_name, span_values[B3_TRACE_ID],
                                                                span_values[B3_SPAN_ID])
@@ -158,14 +156,14 @@ class Tracer:
             span_info = {
                 'name': name,
                 'span_id': span_values[B3_SPAN_ID],
-                'display_name': _truncate_str(self.current_span['display_name'], limit=SPAN_DISPLAY_NAME_BYTE_LIMIT),
+                'display_name': truncate_str(self.current_span['display_name'], limit=SPAN_DISPLAY_NAME_BYTE_LIMIT),
                 'start_time': self.current_span['start_timestamp'],
                 'end_time': end_timestamp,
                 'parent_span_id': span_values[B3_PARENT_SPAN_ID],
                 'same_process_as_parent_span': BoolValue(value=False),
                 'child_span_count': Int32Value(value=self.current_span['child_span_count'])
             }
-            post_to_api_job = Thread(target=_post_span, args=(self.stackdriver_trace_client, span_info))
+            post_to_api_job = Thread(target=post_span, args=(self.stackdriver_trace_client, span_info))
             post_to_api_job.start()
 
         self._delete_current_span()
@@ -192,7 +190,7 @@ class Tracer:
         subspan_values = {
             B3_TRACE_ID: parent_span_values[B3_TRACE_ID],
             B3_PARENT_SPAN_ID: parent_span_values[B3_SPAN_ID],
-            B3_SPAN_ID: _generate_identifier(SPAN_LEN),
+            B3_SPAN_ID: generate_identifier(SPAN_LEN),
             B3_SAMPLED: parent_span_values[B3_SAMPLED],
             B3_FLAGS: parent_span_values[B3_FLAGS]
         }
@@ -216,84 +214,3 @@ class Tracer:
         return self._memory
 
 
-class SpanContext:
-    def __init__(self, tracer, incoming_headers, span_name, exclude_from_posting=False):
-        """Context manager for creating a span."""
-        self.tracer = tracer
-        self.span_name = span_name
-        self.exclude = exclude_from_posting
-        self.incoming_headers = incoming_headers
-
-    def __enter__(self):
-        self.tracer.start_traced_span(self.incoming_headers, self.span_name)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.tracer.end_traced_span(self.exclude)
-
-
-class SubSpanContext:
-    def __init__(self, tracer, span_name, exclude_from_posting=False):
-        """Context manager for creating a subspan."""
-        self.tracer = tracer
-        self.span_name = span_name,
-        self.exclude = exclude_from_posting
-
-    def __enter__(self):
-        self.tracer.start_traced_subspan(self.span_name)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.tracer.end_traced_subspan(self.exclude)
-
-
-def _post_span(stackdriver_trace_client, span_info):
-    """Post span to Stackdriver Trace API."""
-    stackdriver_trace_client.create_span(**span_info)
-
-
-def _get_timestamp():
-    """Get timestamp in a format Stackdriver Trace accepts it."""
-    now = time.time()
-    seconds, nanos = _to_seconds_and_nanos(now)
-    timestamp = Timestamp(seconds=seconds, nanos=nanos)
-    return timestamp
-
-
-def _to_seconds_and_nanos(fractional_seconds):
-    """Convert fractional seconds to seconds and nanoseconds."""
-    seconds = int(fractional_seconds)
-    nanos = int((fractional_seconds - seconds) * 10 ** 9)
-    return seconds, nanos
-
-
-def _truncate_str(str_to_truncate, limit):
-    """Truncate a string if exceed limit and record the truncated bytes count."""
-    str_bytes = str_to_truncate.encode('utf-8')
-    trunc = {
-        'value': str_bytes[:limit].decode('utf-8', errors='ignore'),
-        'truncated_byte_count': len(str_bytes) - len(str_bytes[:limit]),
-    }
-    return trunc
-
-
-def _generate_identifier(identifier_length):
-    """
-    Generates a new, random identifier in B3 format.
-    Arguments:
-        identifier_length (int): length of identifier to generate
-    Returns:
-        (str): A 64-bit random identifier, rendered as a hex String.
-    """
-    if not _is_power2(identifier_length):
-        raise ValueError('ID length must be a positive non-zero power of 2')
-
-    bit_length = identifier_length * 4
-    byte_length = int(bit_length / 8)
-    identifier = os.urandom(byte_length)
-    return hexlify(identifier).decode('ascii')
-
-
-def _is_power2(num):
-    """
-    States if a number is a power of two
-    """
-    return num != 0 and ((num & (num - 1)) == 0)

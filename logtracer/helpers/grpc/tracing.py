@@ -5,7 +5,7 @@ from grpc._cython.cygrpc import _Metadatum
 from grpc._interceptor import _ClientCallDetails
 
 from logtracer.helpers.grpc.redact import redact_request
-from logtracer.tracing.tracer import Tracer
+from logtracer.tracing import Tracer
 
 B3_VALUES_KEY = 'b3-values'
 

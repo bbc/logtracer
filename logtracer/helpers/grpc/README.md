@@ -75,6 +75,21 @@ grpc_tracer.requests.post('http://example-post.com', data={'data':'test'})
 ...
 ```
 
+
+#### HTTP (to a service without `logtracer`)
+
+```python
+from app.trace import grpc_tracer
+
+...
+
+grpc_tracer.unsupported_requests.get('http://example-get.com')
+grpc_tracer.unsupported_requests.post('http://example-post.com', data={'data':'test'})
+
+...
+```
+
+
 #### gRPC
 ```python
 import grpc
@@ -88,4 +103,21 @@ stub = DemoServiceStub(intercept_channel)
 
 message = EmptyMessage()
 stub.DemoRPC(message)
+```
+
+#### Other
+To trace anything else, use the `SubSpanContext`.
+```python
+from app.trace import grpc_tracer
+from app.log import logger_factory
+from logtracer.tracing import SubSpanContext
+
+...
+
+logger = logger_factory.get_logger(__name__)
+
+logger.info('Outside of a subspan')
+with SubSpanContext(grpc_tracer, 'example-span'):
+    logger.info('In a subspan, trace a function or anything else here.')
+
 ```

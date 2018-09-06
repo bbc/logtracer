@@ -42,70 +42,8 @@ By default tracing functionality is disabled, you may use the logging functional
 
 There are four ways to implement tracing, depending on your use case:
 #### `Tracer` class
-Use this if you are not using Flask or gRPC, or if you would like to use the library for purposes other than to trace individual requests.
-Initialise the Tracer class _once_ in your app, and it is recommended you do it in a separate file to avoid cyclic import errors.
-```python
-# app/trace.py
-from app.log import logger_factory
-from logtracer.tracing import Tracer
-
-enable_trace_posting = os.getenv('ENABLE_TRACE_POSTING', 'false') == 'true'
-tracer = Tracer(logger_factory, post_spans_to_stackdriver_api=enable_trace_posting)
-tracer.set_logging_level('DEBUG') # 'INFO' recommended in production
-```
-Using the Tracer instance to manage spans:
-```python
-from app.trace.py import tracer
-from app.log import logger_factory
-
-logger = logger_factory.get_logger(__name__)
-
-logger.info('Outside of span')
-
-tracer.start_traced_span(headers, 'example-span')
-logger.info('In span')
-
-tracer.start_traced_subspan('example-sub-span')
-logger.info('In sub span')
-
-tracer.start_traced_subspan('example-sub-sub-span')
-logger.info('In sub sub span')
-
-# use wrapped requests library which injects tracing headers
-tracer.requests.get('http://example-traced-get.com')
-
-tracer.end_traced_subspan(exclude_from_posting=False)
-
-tracer.end_traced_subspan(exclude_from_posting=False)
-
-tracer.end_traced_span(exclude_from_posting=False)
-
-```
-Or, using context managers:
-
-```python
-from app.trace.py import tracer
-from app.log import logger_factory
-from logtracer.tracing import SpanContext, SubSpanContext
-
-...
-
-logger = logger_factory.get_logger(__name__)
-
-logger.info('Outside of span')
-with SpanContext(tracer, headers, 'example-span'):
-    logger.info('In span')
-    with SubSpanContext(tracer, 'example-sub-span'):
-        logger.info('In sub span')
-        with SubSpanContext(tracer, 'example-sub-sub-span'):
-            logger.info('In sub sub span')
-            tracer.requests.get('http://example-traced-get.com')
-
-```
-The `Tracer` class (and therefore the `FlaskTracer`, `GRPCTracer` and `MixedTracer` classes) have a `requests` property. This wraps the standard
-requests library to automatically inject the span values into any outgoing `get`, `post`, `update`, etc. requests.
-
-The `FlaskTracer`, `GRPCTracer` and `MixedTracer` classes inherit from the `Tracer` class, and wrap these features to make implementation simpler.
+See [Tracer](logtracer/tracing). This is the main tracing class - the `FlaskTracer`, `GRPCTracer` and `MixedTracer` classes inherit from the this class.
+Usually you don't want to use this class directly, use one of the others instead.
    
 #### `MixedTracer` class
 See [MixedTracer](logtracer/helpers/mixed), use with a Flask app that calls gRPC or HTTP services. Inherits from both

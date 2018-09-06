@@ -7,7 +7,7 @@ from enum import Enum
 from pythonjsonlogger import jsonlogger
 
 from logtracer.exceptions import SpanNotStartedError
-from logtracer.tracing import B3_SPAN_ID, B3_TRACE_ID
+from logtracer.tracing.tracer import B3_SPAN_ID, B3_TRACE_ID
 
 LOG_SEVERITIES = {
     'DEBUG': 'DEBUG',
@@ -131,7 +131,9 @@ class JSONLoggerFactory:
         root_logger.handlers = []
         root_logger.addHandler(handler)
 
-    def get_logger(self, module_name=''):
+    def get_logger(self, module_name='', level='INFO'):
         """Use this function to get the logger throughout your app."""
         module_name = f".{module_name}" if module_name else module_name
-        return logging.getLogger(f'{self.service_name}{module_name}')
+        logger = logging.getLogger(f'{self.service_name}{module_name}')
+        logger.setLevel(level)
+        return logger

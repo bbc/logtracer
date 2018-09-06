@@ -5,17 +5,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from google.auth.exceptions import DefaultCredentialsError
-from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
 from pytest import fixture
 
 from logtracer.exceptions import StackDriverAuthError, SpanNotStartedError
 from logtracer.requests_wrapper import RequestsWrapper
-from logtracer.tracing import Tracer, _post_span, _get_timestamp, _to_seconds_and_nanos, _truncate_str, SpanContext, \
-    SubSpanContext
+from logtracer.tracing.tracer import Tracer
+from logtracer.tracing._utils import post_span
 
-CLASS_PATH = 'logtracer.tracing.Tracer.'
-MODULE_PATH = 'logtracer.tracing.'
+CLASS_PATH = 'logtracer.tracing.tracer.Tracer.'
+MODULE_PATH = 'logtracer.tracing.tracer.'
 
 
 @fixture
@@ -92,8 +91,8 @@ def test_tracer_set_logging_level(tracer):
     assert tracer.logger.setLevel.called_with_args('test_level')
 
 
-@patch(MODULE_PATH + '_generate_identifier', lambda n: f'test_generated_id_{n}')
-@patch(MODULE_PATH + '_get_timestamp', MagicMock(return_value='test_timestamp'))
+@patch(MODULE_PATH + 'generate_identifier', lambda n: f'test_generated_id_{n}')
+@patch(MODULE_PATH + 'get_timestamp', MagicMock(return_value='test_timestamp'))
 @patch(CLASS_PATH + 'current_span', 'test_current_span')
 def test_tracer_start_traced_span_with_headers(tracer):
     tracer.current_span = ''
@@ -113,8 +112,8 @@ def test_tracer_start_traced_span_with_headers(tracer):
     assert tracer.logger.debug.called_with_args('Span started test_current_span')
 
 
-@patch(MODULE_PATH + '_generate_identifier', lambda n: f'test_generated_id_{n}')
-@patch(MODULE_PATH + '_get_timestamp', MagicMock(return_value='test_timestamp'))
+@patch(MODULE_PATH + 'generate_identifier', lambda n: f'test_generated_id_{n}')
+@patch(MODULE_PATH + 'get_timestamp', MagicMock(return_value='test_timestamp'))
 @patch(CLASS_PATH + 'current_span', 'test_current_span')
 def test_tracer_start_traced_span_without_headers(tracer):
     headers = {}
@@ -199,8 +198,8 @@ test_span_info = {
 
 
 @patch(CLASS_PATH + 'current_span', test_span_info)
-@patch(MODULE_PATH + '_get_timestamp', MagicMock(return_value='test_timestamp'))
-@patch(MODULE_PATH + '_truncate_str', MagicMock(return_value='test_truncated_str'))
+@patch(MODULE_PATH + 'get_timestamp', MagicMock(return_value='test_timestamp'))
+@patch(MODULE_PATH + 'truncate_str', MagicMock(return_value='test_truncated_str'))
 @patch(MODULE_PATH + 'Thread')
 def test_tracer_end_traced_span_do_post(m_thread, tracer):
     tracer.memory.current_span_id = 'test_span_id'
@@ -225,13 +224,13 @@ def test_tracer_end_traced_span_do_post(m_thread, tracer):
         'same_process_as_parent_span': BoolValue(value=False),
         'child_span_count': Int32Value(value=0)
     }
-    m_thread.assert_called_with(target=_post_span, args=(tracer.stackdriver_trace_client, expected_span_info,))
+    m_thread.assert_called_with(target=post_span, args=(tracer.stackdriver_trace_client, expected_span_info,))
     assert tracer._delete_current_span.called
 
 
 @patch(CLASS_PATH + 'current_span', test_span_info)
-@patch(MODULE_PATH + '_get_timestamp', MagicMock(return_value='test_timestamp'))
-@patch(MODULE_PATH + '_truncate_str', MagicMock(return_value='test_truncated_str'))
+@patch(MODULE_PATH + 'get_timestamp', MagicMock(return_value='test_timestamp'))
+@patch(MODULE_PATH + 'truncate_str', MagicMock(return_value='test_truncated_str'))
 @patch(MODULE_PATH + 'Thread')
 def test_tracer_end_traced_span_dont_post(m_thread, tracer):
     tracer.memory.current_span_id = 'test_span_id'
@@ -259,7 +258,7 @@ def test_tracer_delete_current_span(tracer):
 
 
 @patch(CLASS_PATH + 'current_span', test_span_info)
-@patch(MODULE_PATH + '_generate_identifier', lambda n: f'test_generated_id_{n}')
+@patch(MODULE_PATH + 'generate_identifier', lambda n: f'test_generated_id_{n}')
 def test_tracer_generate_new_traced_subspan_values(tracer):
     subspan_values = tracer.generate_new_traced_subspan_values()
 
@@ -303,52 +302,3 @@ def test_tracer_memory():
     assert tracer.memory.current_span_id is None
 
 
-def test_spancontext():
-    m_tracer = MagicMock()
-    with SpanContext(m_tracer, {'test': 'headers'}, 'test_span_name', exclude_from_posting='test_exclude_bool'):
-        m_tracer.start_traced_span.assert_called_with({'test': 'headers'}, 'test_span_name')
-        assert not m_tracer.end_traced_span.called
-    m_tracer.end_traced_span.assert_called_with('test_exclude_bool')
-
-
-def test_subspancontext_no_span():
-    m_tracer = MagicMock()
-    m_tracer.start_traced_subspan.side_effect = SpanNotStartedError
-    with pytest.raises(SpanNotStartedError):
-        with SubSpanContext(m_tracer, 'test_span_name', 'test_exclude_bool'):
-            pass
-
-
-def test_post_span():
-    m_trace_client = MagicMock()
-    _post_span(m_trace_client, {"info": "test_span_info"})
-    m_trace_client.create_span.assert_called_with(info="test_span_info")
-
-
-@patch(MODULE_PATH + '_to_seconds_and_nanos')
-@patch(MODULE_PATH + 'time')
-def test_get_timestamp(m_time, m_to_secs_and_nanos):
-    m_time.time.return_value = 'test_time'
-    m_to_secs_and_nanos.return_value = (100, 200)
-
-    timestamp = _get_timestamp()
-
-    m_to_secs_and_nanos.assert_called_with('test_time')
-    assert timestamp == Timestamp(seconds=100, nanos=200)
-
-
-def test_to_seconds_and_nanos():
-    seconds, nanos = _to_seconds_and_nanos(1532962140.8755891)
-
-    assert seconds == 1532962140
-    assert nanos == 875589132
-
-
-def test_truncate_str():
-    shortstr = 'short'
-    trunc_obj = _truncate_str(shortstr, limit=10)
-    assert trunc_obj == {'value': 'short', 'truncated_byte_count': 0}
-
-    longstr = 'kindoflongstring'
-    trunc_obj = _truncate_str(longstr, limit=10)
-    assert trunc_obj == {'value': 'kindoflong', 'truncated_byte_count': 6}

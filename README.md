@@ -56,15 +56,18 @@ See [FlaskTracer](logtracer/helpers/flask), use with a Flask app that calls othe
 See [GRPCTracer](logtracer/helpers/grpc), use with a gRPC app that calls other gRPC or HTTP services.
 
 #### Stackdriver Trace API
-If you choose to enable posting trace information to the API  _locally_ (unadvised unless you are specifically testing functionality of the Trace API), 
-then you *must* set up authentication for the [google-cloud-trace](https://pypi.org/project/google-cloud-trace/) client using the following command: 
+To enable posting of traces, the `post_spans_to_stackdriver_api` argument passed into the `Tracer` instance initialisation must be `True`, and the `logging_format` argument passed into the `JSONLoggerfactory` instance initialisation must be `stackdriver` enum. If `post_spans_to_stackdriver_api` is `True`, and GCP Credentials are not found, an exception will be raised.
+
+If you are deploying a an image onto a Kubernetes cluster, then GCP credentials should be retrieved automatically, **unless you have set up another service account to be used**. In this case, make sure to **add the relevant roles to the service account**. The enviromental variables above **must be set** to post traces, do this using a Kubernetes `configmap` (we use the `stackdriver-logging` configmap already configured in the `bbc-connected-data` project, add this to the deployment in `Spinnaker`).
+
+If you choose to enable posting trace information to the API  _locally_ (unadvised unless you are specifically testing functionality of the Trace API or need to see traces of a local process), 
+then you *must* set up authentication for the [google-cloud-trace](https://pypi.org/project/google-cloud-trace/) client.
+
+If no dedicated service account is set up with the service, then use the following command: 
 ```
 gcloud auth application-default login
 ```
-If the `post_spans_to_stackdriver_api` argument to the `Tracer` instance is `True`, and GCP Credentials are not found, an exception will be raised.
-
-If you are deploying a an image onto a Kubernetes cluster, then GCP credentials should be retrieved automatically, *unless you have set up another service account to be used*. 
-If you have configured another service account then make sure to add the relevant roles to the service account.
+However, if you have configured another service account then make sure to **add the relevant roles to the service account**.
 
 ## Purpose
 

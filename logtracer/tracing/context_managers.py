@@ -17,7 +17,7 @@ class SubSpanContext:
     def __init__(self, tracer, span_name, exclude_from_posting=False):
         """Context manager for creating a subspan."""
         self.tracer = tracer
-        self.span_name = span_name,
+        self.span_name = span_name
         self.exclude = exclude_from_posting
 
     def __enter__(self):

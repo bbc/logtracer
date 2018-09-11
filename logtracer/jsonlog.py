@@ -27,10 +27,11 @@ class Formatters(Enum):
 class JsonFormatter(jsonlogger.JsonFormatter):
     tracer = None
 
-    def __init__(self, *args, stackdriver=False, **kwargs):
+    def __init__(self, stackdriver, project_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tracer = None
         self.stackdriver = stackdriver
+        self.project_name = project_name
 
     def add_fields(self, log_record, record, message_dict):
         """
@@ -44,7 +45,7 @@ class JsonFormatter(jsonlogger.JsonFormatter):
         gcp_log_record = _generate_log_record(record, stackdriver=self.stackdriver)
 
         if self.tracer:
-            _add_span_values(self.tracer, gcp_log_record, stackdriver=self.stackdriver)
+            _add_span_values(self.tracer, gcp_log_record, self.stackdriver, self.project_name)
 
         log_record.update(gcp_log_record)
         log_record.pop('exc_info', None)
@@ -76,7 +77,7 @@ def _generate_log_record(record, stackdriver=False):
     return json_log_record
 
 
-def _add_span_values(tracer, json_log_record, stackdriver=False, project_name=''):
+def _add_span_values(tracer, json_log_record, stackdriver, project_name):
     """Add span values to log entry if a tracer instance is present and the log entry is written within a span."""
     try:
         span_values = tracer.current_span['values']
@@ -125,7 +126,7 @@ class JSONLoggerFactory:
 
         handler = logging.StreamHandler(sys.stdout)
         stackdriver = True if logging_format == Formatters.stackdriver else False
-        handler.setFormatter(JsonFormatter(stackdriver=stackdriver))
+        handler.setFormatter(JsonFormatter(stackdriver, project_name))
 
         root_logger = logging.getLogger()
         root_logger.handlers = []

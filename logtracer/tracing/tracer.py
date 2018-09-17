@@ -46,7 +46,7 @@ class Tracer:
         """
         self.project_name = json_logger_factory.project_name
         self.service_name = json_logger_factory.service_name
-        self.logger = json_logger_factory.get_logger(__name__)
+        self.logger = json_logger_factory.get_logger('logtracer')
         self.requests = RequestsWrapper(self)
         self.unsupported_requests = UnsupportedRequestsWrapper(self)
         self.stackdriver_trace_client = None

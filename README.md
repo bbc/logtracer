@@ -19,7 +19,7 @@ project_name = 'bbc-connected-data'
 service_name = 'demoApp'
 
 logging_format = os.getenv('LOGGING_FORMAT', 'local')
-logger_factory = JSONLoggerFactory(project_name, service_name, Formatters[logging_format])
+logger_factory = JSONLoggerFactory(project_name, service_name, Formatters[logging_format], logger_per_module=False)
 # or without env variable
 # logger_factory = JSONLoggerFactory(project_name, service_name, Formatters.local)
 logger = logger_factory.get_logger(__name__)
@@ -32,7 +32,8 @@ from app.log import logger_factory
 
 logger = logger_factory.get_logger(__name__)
 ```
-
+If `logger_per_module` is `True` in the `JSONLoggerFactory` initialisation, then a logger will created with the name `<service_name>.<__name__>`,
+if `False` then it will re-use the service-wide logger `<service_name>`.
 ### JSON Logging in Stackdriver Format
 To format the JSON logs in such a way that Stackdriver Logs can understand, pass in `stackdriver` as the `logging_format`.
 it is recommended you do this using an environmental variable as above.

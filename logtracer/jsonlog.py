@@ -27,10 +27,11 @@ class Formatters(Enum):
 class JsonFormatter(jsonlogger.JsonFormatter):
     tracer = None
 
-    def __init__(self, *args, stackdriver=False, **kwargs):
+    def __init__(self, stackdriver, project_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tracer = None
         self.stackdriver = stackdriver
+        self.project_name = project_name
 
     def add_fields(self, log_record, record, message_dict):
         """
@@ -44,7 +45,7 @@ class JsonFormatter(jsonlogger.JsonFormatter):
         gcp_log_record = _generate_log_record(record, stackdriver=self.stackdriver)
 
         if self.tracer:
-            _add_span_values(self.tracer, gcp_log_record, stackdriver=self.stackdriver)
+            _add_span_values(self.tracer, gcp_log_record, self.stackdriver, self.project_name)
 
         log_record.update(gcp_log_record)
         log_record.pop('exc_info', None)
@@ -76,7 +77,7 @@ def _generate_log_record(record, stackdriver=False):
     return json_log_record
 
 
-def _add_span_values(tracer, json_log_record, stackdriver=False, project_name=''):
+def _add_span_values(tracer, json_log_record, stackdriver, project_name):
     """Add span values to log entry if a tracer instance is present and the log entry is written within a span."""
     try:
         span_values = tracer.current_span['values']
@@ -107,7 +108,7 @@ def _format_message_for_exception(record):
 
 class JSONLoggerFactory:
 
-    def __init__(self, project_name, service_name, logging_format):
+    def __init__(self, project_name, service_name, logging_format, logger_per_module=False):
         """
         Class to handle creation of a logger instance with a JSON formatter. Only initialise this ONCE and reuse it
         across your app.
@@ -116,16 +117,19 @@ class JSONLoggerFactory:
             project_name (str): name of your GCP project
             service_name (str): name of your app
             logging_format (Formatters): enum of platform for log formatting
+            logger_per_module (bool): toggle namespacing loggers per module eg `snowdrop.services.bramble.client`
+                vs `snowdrop`
         """
         self.project_name = project_name
         self.service_name = service_name
+        self.logger_per_module = logger_per_module
 
         if not isinstance(logging_format, Formatters):
             raise ValueError('Logging format must be from Formatters enum')
 
         handler = logging.StreamHandler(sys.stdout)
         stackdriver = True if logging_format == Formatters.stackdriver else False
-        handler.setFormatter(JsonFormatter(stackdriver=stackdriver))
+        handler.setFormatter(JsonFormatter(stackdriver, project_name))
 
         root_logger = logging.getLogger()
         root_logger.handlers = []
@@ -133,6 +137,7 @@ class JSONLoggerFactory:
 
     def get_logger(self, module_name='', level='INFO'):
         """Use this function to get the logger throughout your app."""
+        module_name = '' if not self.logger_per_module else module_name
         module_name = f".{module_name}" if module_name else module_name
         logger = logging.getLogger(f'{self.service_name}{module_name}')
         logger.setLevel(level)

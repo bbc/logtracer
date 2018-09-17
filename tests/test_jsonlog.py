@@ -13,40 +13,21 @@ MODULE_PATH = 'logtracer.jsonlog.'
 @patch(MODULE_PATH + '_format_message_for_exception')
 @patch(MODULE_PATH + '_generate_log_record')
 @patch(MODULE_PATH + '_add_span_values')
-def test_JsonFormatter_add_fields_local(m_add_span_values, m_generate_log_record, m_format_msg_exc):
+def test_JsonFormatter_add_fields(m_add_span_values, m_generate_log_record, m_format_msg_exc):
     class MockRecord:
         exc_info = 'test_exc_info'
 
     m_generate_log_record.return_value = {'test_generate': 'record'}
     mock_log_record = {'test': 'record'}
     mock_record = MockRecord()
-    json_formatter = JsonFormatter()
+    json_formatter = JsonFormatter('test_stackdriver_bool', 'test_project_name')
     json_formatter.tracer = 'test_tracer'
     json_formatter.add_fields(mock_log_record, mock_record, {})
 
     m_format_msg_exc.assert_called_with(mock_record)
-    m_generate_log_record.assert_called_with(mock_record, stackdriver=False)
-    m_add_span_values.assert_called_with('test_tracer', {'test_generate': 'record'}, stackdriver=False)
-    assert mock_log_record == {'test': 'record', 'test_generate': 'record'}
-
-
-@patch(MODULE_PATH + '_format_message_for_exception')
-@patch(MODULE_PATH + '_generate_log_record')
-@patch(MODULE_PATH + '_add_span_values')
-def test_JsonFormatter_add_fields_stackdriver(m_add_span_values, m_generate_log_record, m_format_msg_exc):
-    class MockRecord:
-        exc_info = 'test_exc_info'
-
-    m_generate_log_record.return_value = {'test_generate': 'record'}
-    mock_log_record = {'test': 'record'}
-    mock_record = MockRecord()
-    json_formatter = JsonFormatter(stackdriver=True)
-    json_formatter.tracer = 'test_tracer'
-    json_formatter.add_fields(mock_log_record, mock_record, {})
-
-    m_format_msg_exc.assert_called_with(mock_record)
-    m_generate_log_record.assert_called_with(mock_record, stackdriver=True)
-    m_add_span_values.assert_called_with('test_tracer', {'test_generate': 'record'}, stackdriver=True)
+    m_generate_log_record.assert_called_with(mock_record, stackdriver='test_stackdriver_bool')
+    m_add_span_values.assert_called_with('test_tracer', {'test_generate': 'record'}, 'test_stackdriver_bool',
+                                         'test_project_name')
     assert mock_log_record == {'test': 'record', 'test_generate': 'record'}
 
 
@@ -179,15 +160,26 @@ test_formatted_tb"""
 
 
 def test_JsonLoggerFactory_stackdriver():
-    json_logger_factory = JSONLoggerFactory('test_project_name', 'test_service_name', Formatters.stackdriver)
+    json_logger_factory = JSONLoggerFactory('test_project_name', 'test_service_name', Formatters.stackdriver,
+                                            logger_per_module=False)
 
-    logger = json_logger_factory.get_logger('test_logger_name')
-    assert logger.name == 'test_service_name.test_logger_name'
+    logger = json_logger_factory.get_logger()
+    assert logger.name == 'test_service_name'
     assert isinstance(logger.root.handlers[0].formatter, JsonFormatter)
 
 
 def test_JsonLoggerFactory_local():
-    json_logger_factory = JSONLoggerFactory('test_project_name', 'test_service_name', Formatters.local)
+    json_logger_factory = JSONLoggerFactory('test_project_name', 'test_service_name', Formatters.local,
+                                            logger_per_module=False)
+
+    logger = json_logger_factory.get_logger()
+    assert logger.name == 'test_service_name'
+    assert isinstance(logger.root.handlers[0].formatter, JsonFormatter)
+
+
+def test_JsonLoggerFactory_logger_per_module():
+    json_logger_factory = JSONLoggerFactory('test_project_name', 'test_service_name', Formatters.local,
+                                            logger_per_module=True)
 
     logger = json_logger_factory.get_logger('test_logger_name')
     assert logger.name == 'test_service_name.test_logger_name'

@@ -1,0 +1,6 @@
+pipeline:
+  build:
+    image: grpc/python:1.4-onbuild
+    commands:
+      - pip3 install flask
+      - python3 setup.py test

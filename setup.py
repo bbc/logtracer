@@ -24,11 +24,18 @@ if __name__ == "__main__":
         install_requires=[
             'python-json-logger>=0.1.9',
             'google-cloud-trace>=0.19.0',
-            'requests>=2.18'
+            'requests>=2.18',
+            'protobuf>=3.6.0'
         ],
         test_suite="tests",
         setup_requires=[
-            'wheel'
+            'wheel',
+            'pytest==3.6.2',
+            'pytest-runner==4.2',
+            'flake8==3.5.0',
+            'pycodestyle<2.4.0',
+            'pytest-cov==2.5.1',
+
         ],
         tests_require=[
             'pytest==3.6.2',
@@ -36,5 +43,6 @@ if __name__ == "__main__":
             'flake8==3.5.0',
             'pycodestyle<2.4.0',
             'pytest-cov==2.5.1',
+            'flask==1.0.2'
         ],
     )

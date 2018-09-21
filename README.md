@@ -1,4 +1,5 @@
 # Log Tracer
+![Drone CI Status](https://drone.datalab.rocks/api/badges/bbc/logtracer/status.svg)
 > Adds distributed tracing information to logger output and sends traces to the Stackdriver Trace API.
 
 

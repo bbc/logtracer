@@ -1,7 +1,6 @@
 pipeline:
   build:
-    image: grpc/python:1.4-onbuild
+    image: ubuntu:bionic-20181018
     commands:
       - pip3 install flask
-      - pip install google
       - python3 setup.py test

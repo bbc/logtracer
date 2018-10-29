@@ -57,7 +57,7 @@ def test_generate_log_record_local():
             },
         'message': 'test_name - test_message',
         'severity': 'INFO',
-        'time': datetime(2018, 7, 30, 16, 10, 48, 341651)
+        'time': datetime(2018, 7, 30, 15, 10, 48, 341651)
     }
 
     assert mock_log_record == expected_mock_log_record
@@ -89,7 +89,7 @@ def test_generate_log_record_stackdriver():
             },
         'message': 'test_name - test_message',
         'severity': 'INFO',
-        'time': datetime(2018, 7, 30, 16, 10, 48, 341651)
+        'time': datetime(2018, 7, 30, 15, 10, 48, 341651)
     }
 
     assert mock_log_record == expected_mock_log_record

@@ -35,7 +35,6 @@ if __name__ == "__main__":
             'flake8==3.5.0',
             'pycodestyle<2.4.0',
             'pytest-cov==2.5.1',
-
         ],
         tests_require=[
             'pytest==3.6.2',
@@ -43,6 +42,6 @@ if __name__ == "__main__":
             'flake8==3.5.0',
             'pycodestyle<2.4.0',
             'pytest-cov==2.5.1',
-            'flask==1.0.2'
+            'flask==1.0.2',
         ],
     )

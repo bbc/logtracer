@@ -30,6 +30,11 @@ if __name__ == "__main__":
         test_suite="tests",
         setup_requires=[
             'wheel',
+            'pytest==3.6.2',
+            'pytest-runner==4.2',
+            'flake8==3.5.0',
+            'pycodestyle<2.4.0',
+            'pytest-cov==2.5.1',
         ],
         tests_require=[
             'pytest==3.6.2',

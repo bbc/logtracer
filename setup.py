@@ -45,6 +45,5 @@ if __name__ == "__main__":
             'pytest-cov==2.5.1',
             'flask==1.0.2',
             'protobuf>=3.6.0'
-
         ],
     )

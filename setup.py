@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 if __name__ == "__main__":
     setup(
         name="logtracer",
-        version="0.3.2",
+        version="0.3.3",
         author="Datalab",
         author_email="datalab@bbc.co.uk",
         description="Adds distributed tracing information to logger output and sends traces to the Stackdriver "
@@ -24,7 +24,7 @@ if __name__ == "__main__":
         install_requires=[
             'python-json-logger>=0.1.9',
             'google-cloud-trace>=0.19.0',
-            'requests>=2.18',
+            'requests>=2.20.0',
             'protobuf>=3.6.0'
         ],
         test_suite="tests",

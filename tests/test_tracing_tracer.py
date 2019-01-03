@@ -333,50 +333,27 @@ def test_tracer_memory():
     assert tracer.memory.current_span_id is None
 
 
-def test_tracer_extract_google_trace_headers_if_present_with_span_and_trace_and_options(tracer):
-    google_headers = {
-        "X-Cloud-Trace-Context": "trace-id/span-id;options"
-    }
+@pytest.mark.parametrize('google_headers,expected_headers', [
+    ({"X-Cloud-Trace-Context": "trace-id/span-id;options"},
+     {
+         "X-B3-SpanId": "span-id",
+         "X-B3-TraceId": "trace-id"
+     }),
+    ({"X-Cloud-Trace-Context": "trace-id/span-id;"},
+     {
+         "X-B3-SpanId": "span-id",
+         "X-B3-TraceId": "trace-id"
+     }),
+    ({"X-Cloud-Trace-Context": "trace-id/span-id"},
+     {
+         "X-B3-SpanId": "span-id",
+         "X-B3-TraceId": "trace-id"
+     }),
+    ({"X-Cloud-Trace-Context": "malformed"},
+     {}
+     ),
+])
+def test_tracer_extract_google_trace_headers_if_present(tracer, google_headers, expected_headers):
     processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
 
-    expected_headers = {
-        "X-B3-SpanId": "span-id",
-        "X-B3-TraceId": "trace-id"
-    }
     assert processed_headers == expected_headers
-
-
-def test_tracer_extract_google_trace_headers_if_present_with_span_and_trace_and_no_options_and_remaining_semicolon(
-        tracer):
-    google_headers = {
-        "X-Cloud-Trace-Context": "trace-id/span-id;"
-    }
-    processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
-
-    expected_headers = {
-        "X-B3-SpanId": "span-id",
-        "X-B3-TraceId": "trace-id"
-    }
-    assert processed_headers == expected_headers
-
-
-def test_tracer_extract_google_trace_headers_if_present_with_span_and_trace_and_no_options(tracer):
-    google_headers = {
-        "X-Cloud-Trace-Context": "trace-id/span-id"
-    }
-    processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
-
-    expected_headers = {
-        "X-B3-SpanId": "span-id",
-        "X-B3-TraceId": "trace-id"
-    }
-    assert processed_headers == expected_headers
-
-
-def test_tracer_extract_google_trace_headers_if_present_with_malformed_header(tracer):
-    google_headers = {
-        "X-Cloud-Trace-Context": "malformed"
-    }
-    processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
-
-    assert processed_headers == {}

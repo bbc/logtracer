@@ -1,3 +1,4 @@
+from copy import deepcopy
 from threading import Thread, local
 
 from google.auth.exceptions import DefaultCredentialsError
@@ -16,6 +17,7 @@ B3_PARENT_SPAN_ID = 'X-B3-ParentSpanId'
 B3_SPAN_ID = 'X-B3-SpanId'
 B3_SAMPLED = 'X-B3-Sampled'
 B3_FLAGS = 'X-B3-Flags'
+GOOGLE_LOAD_BALANCER_TRACE_HEADERS = "X-Cloud-Trace-Context"
 B3_HEADERS = [B3_TRACE_ID, B3_PARENT_SPAN_ID, B3_SPAN_ID, B3_SAMPLED, B3_FLAGS]
 
 
@@ -91,6 +93,8 @@ class Tracer:
             incoming_headers: Incoming request headers. These could be http, or part of a GRPC message.
             span_name (str): Path of the endpoint of the incoming request.
         """
+        incoming_headers = self._extract_google_trace_headers_if_present(incoming_headers)
+
         span_values = {
             B3_TRACE_ID: incoming_headers.get(B3_TRACE_ID) or generate_identifier(TRACE_LEN),
             B3_PARENT_SPAN_ID: incoming_headers.get(B3_PARENT_SPAN_ID),
@@ -109,6 +113,22 @@ class Tracer:
         self.memory.current_span_id = span_id
 
         self.logger.debug(f'Span started {self.memory.current_span_id}')
+
+    def _extract_google_trace_headers_if_present(self, incoming_headers):
+        if B3_TRACE_ID not in incoming_headers and GOOGLE_LOAD_BALANCER_TRACE_HEADERS in incoming_headers:
+            incoming_headers = deepcopy(incoming_headers)
+            try:
+                traceid, spanid_with_params = incoming_headers.get(GOOGLE_LOAD_BALANCER_TRACE_HEADERS, '').split('/')
+                if ';' in spanid_with_params:
+                    spanid, params = spanid_with_params.split(';')
+                else:
+                    spanid = spanid_with_params
+                incoming_headers[B3_TRACE_ID] = traceid
+                incoming_headers[B3_SPAN_ID] = spanid
+            except ValueError:
+                pass
+            del incoming_headers[GOOGLE_LOAD_BALANCER_TRACE_HEADERS]
+        return incoming_headers
 
     @property
     def current_span(self):
@@ -203,6 +223,7 @@ class Tracer:
         Thread local memory for storing the _current_ span id, needed for if this class is used in a multi-threaded
         environment.
         """
+
         class SpanMemory(local):
             def __init__(self):
                 self.current_span_id = None
@@ -212,5 +233,3 @@ class Tracer:
             self._memory = SpanMemory()
 
         return self._memory
-
-

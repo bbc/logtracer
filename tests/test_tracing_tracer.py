@@ -10,8 +10,8 @@ from pytest import fixture
 
 from logtracer.exceptions import StackDriverAuthError, SpanNotStartedError
 from logtracer.requests_wrapper import RequestsWrapper
-from logtracer.tracing.tracer import Tracer
 from logtracer.tracing._utils import post_span
+from logtracer.tracing.tracer import Tracer
 
 CLASS_PATH = 'logtracer.tracing.tracer.Tracer.'
 MODULE_PATH = 'logtracer.tracing.tracer.'
@@ -109,6 +109,37 @@ def test_tracer_start_traced_span_with_headers(tracer):
     }
     assert tracer._spans == expected_spans
     assert tracer.memory.current_span_id == 'test_span_id'
+    assert tracer.logger.debug.called_with_args('Span started test_current_span')
+
+
+@patch(MODULE_PATH + 'generate_identifier', lambda n: f'test_generated_id_{n}')
+@patch(MODULE_PATH + 'get_timestamp', MagicMock(return_value='test_timestamp'))
+@patch(CLASS_PATH + 'current_span', 'test_current_span')
+def test_tracer_start_traced_span_with_gcp_loadbalancer_headers(tracer):
+    tracer.current_span = ''
+
+    test_gcp_span_headers = {
+        "X-Cloud-Trace-Context": "test_gcp_trace_id/test_gcp_span_id;params"
+    }
+
+    tracer.start_traced_span(test_gcp_span_headers, 'test_span_name')
+
+    expected_spans = {
+        'test_gcp_span_id': {
+            "start_timestamp": 'test_timestamp',
+            "display_name": 'test_service_name:test_span_name',
+            "child_span_count": 0,
+            "values": {
+                'X-B3-SpanId': 'test_gcp_span_id',
+                'X-B3-TraceId': 'test_gcp_trace_id',
+                'X-B3-Flags': None,
+                'X-B3-ParentSpanId': None,
+                'X-B3-Sampled': None
+            }
+        }
+    }
+    assert tracer._spans == expected_spans
+    assert tracer.memory.current_span_id == 'test_gcp_span_id'
     assert tracer.logger.debug.called_with_args('Span started test_current_span')
 
 
@@ -302,3 +333,27 @@ def test_tracer_memory():
     assert tracer.memory.current_span_id is None
 
 
+@pytest.mark.parametrize('google_headers,expected_headers', [
+    ({"X-Cloud-Trace-Context": "trace-id/span-id;options"},
+     {
+         "X-B3-SpanId": "span-id",
+         "X-B3-TraceId": "trace-id"
+     }),
+    ({"X-Cloud-Trace-Context": "trace-id/span-id;"},
+     {
+         "X-B3-SpanId": "span-id",
+         "X-B3-TraceId": "trace-id"
+     }),
+    ({"X-Cloud-Trace-Context": "trace-id/span-id"},
+     {
+         "X-B3-SpanId": "span-id",
+         "X-B3-TraceId": "trace-id"
+     }),
+    ({"X-Cloud-Trace-Context": "malformed"},
+     {}
+     ),
+])
+def test_tracer_extract_google_trace_headers_if_present(tracer, google_headers, expected_headers):
+    processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
+
+    assert processed_headers == expected_headers

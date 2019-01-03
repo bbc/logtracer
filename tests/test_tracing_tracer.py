@@ -333,11 +333,11 @@ def test_tracer_memory():
     assert tracer.memory.current_span_id is None
 
 
-def test_tracer_extract_google_trace_headers_if_exist_with_span_and_trace_and_options(tracer):
+def test_tracer_extract_google_trace_headers_if_present_with_span_and_trace_and_options(tracer):
     google_headers = {
         "X-Cloud-Trace-Context": "trace-id/span-id;options"
     }
-    processed_headers = tracer._extract_google_trace_headers_if_exist(google_headers)
+    processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
 
     expected_headers = {
         "X-B3-SpanId": "span-id",
@@ -346,12 +346,12 @@ def test_tracer_extract_google_trace_headers_if_exist_with_span_and_trace_and_op
     assert processed_headers == expected_headers
 
 
-def test_tracer_extract_google_trace_headers_if_exist_with_span_and_trace_and_no_options_and_remaining_semicolon(
+def test_tracer_extract_google_trace_headers_if_present_with_span_and_trace_and_no_options_and_remaining_semicolon(
         tracer):
     google_headers = {
         "X-Cloud-Trace-Context": "trace-id/span-id;"
     }
-    processed_headers = tracer._extract_google_trace_headers_if_exist(google_headers)
+    processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
 
     expected_headers = {
         "X-B3-SpanId": "span-id",
@@ -360,11 +360,11 @@ def test_tracer_extract_google_trace_headers_if_exist_with_span_and_trace_and_no
     assert processed_headers == expected_headers
 
 
-def test_tracer_extract_google_trace_headers_if_exist_with_span_and_trace_and_no_options(tracer):
+def test_tracer_extract_google_trace_headers_if_present_with_span_and_trace_and_no_options(tracer):
     google_headers = {
         "X-Cloud-Trace-Context": "trace-id/span-id"
     }
-    processed_headers = tracer._extract_google_trace_headers_if_exist(google_headers)
+    processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
 
     expected_headers = {
         "X-B3-SpanId": "span-id",
@@ -373,10 +373,10 @@ def test_tracer_extract_google_trace_headers_if_exist_with_span_and_trace_and_no
     assert processed_headers == expected_headers
 
 
-def test_tracer_extract_google_trace_headers_if_exist_with_malformed_header(tracer):
+def test_tracer_extract_google_trace_headers_if_present_with_malformed_header(tracer):
     google_headers = {
         "X-Cloud-Trace-Context": "malformed"
     }
-    processed_headers = tracer._extract_google_trace_headers_if_exist(google_headers)
+    processed_headers = tracer._extract_google_trace_headers_if_present(google_headers)
 
     assert processed_headers == {}

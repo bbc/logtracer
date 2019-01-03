@@ -93,7 +93,7 @@ class Tracer:
             incoming_headers: Incoming request headers. These could be http, or part of a GRPC message.
             span_name (str): Path of the endpoint of the incoming request.
         """
-        incoming_headers = self._extract_google_trace_headers_if_exist(incoming_headers)
+        incoming_headers = self._extract_google_trace_headers_if_present(incoming_headers)
 
         span_values = {
             B3_TRACE_ID: incoming_headers.get(B3_TRACE_ID) or generate_identifier(TRACE_LEN),
@@ -114,7 +114,7 @@ class Tracer:
 
         self.logger.debug(f'Span started {self.memory.current_span_id}')
 
-    def _extract_google_trace_headers_if_exist(self, incoming_headers):
+    def _extract_google_trace_headers_if_present(self, incoming_headers):
         if B3_TRACE_ID not in incoming_headers and GOOGLE_LOAD_BALANCER_TRACE_HEADERS in incoming_headers:
             incoming_headers = deepcopy(incoming_headers)
             try:

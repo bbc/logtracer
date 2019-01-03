@@ -115,8 +115,9 @@ class Tracer:
         self.logger.debug(f'Span started {self.memory.current_span_id}')
 
     def _extract_google_trace_headers_if_present(self, incoming_headers):
+        """Extract Google tracing headers from incoming requests if they are present."""
         if B3_TRACE_ID not in incoming_headers and GOOGLE_LOAD_BALANCER_TRACE_HEADERS in incoming_headers:
-            incoming_headers = deepcopy(incoming_headers)
+            incoming_headers = dict(incoming_headers)
             try:
                 traceid, spanid_with_params = incoming_headers.get(GOOGLE_LOAD_BALANCER_TRACE_HEADERS, '').split('/')
                 if ';' in spanid_with_params:

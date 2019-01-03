@@ -116,6 +116,8 @@ Trace API and they are linked to the logs by tracing metadata as shown in the im
 
 ![example trace](logtracer/examples/example_trace.png)
 
+_New in version 0.3.4_: Trace and span IDs are now picked up from headers received from a GCP load balancer.
+
 
 ## Examples
 Examples for a Flask and a gRPC service exist in the [examples](logtracer/examples) directory.
@@ -133,3 +135,4 @@ You may clone the examples and change logging levels to `DEBUG` for more verbosi
 \* Some fields may not be parsed as expected, this is likely due to the version of the 
 [fluentd plugin](https://github.com/GoogleCloudPlatform/fluent-plugin-google-cloud) not being the latest. 
 For example, the `logging.googleapis.com/span_id` field is only supported in more recent versions of the plugin.
+

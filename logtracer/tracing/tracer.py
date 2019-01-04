@@ -1,13 +1,12 @@
+import re
 from copy import deepcopy
-from threading import Thread, local
-
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
-
 from logtracer.exceptions import StackDriverAuthError, SpanNotStartedError
 from logtracer.requests_wrapper import RequestsWrapper, UnsupportedRequestsWrapper
 from logtracer.tracing._utils import post_span, get_timestamp, truncate_str, generate_identifier
+from threading import Thread, local
 
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
 TRACE_LEN = 32
@@ -18,6 +17,8 @@ B3_SPAN_ID = 'X-B3-SpanId'
 B3_SAMPLED = 'X-B3-Sampled'
 B3_FLAGS = 'X-B3-Flags'
 GOOGLE_LOAD_BALANCER_TRACE_HEADERS = "X-Cloud-Trace-Context"
+_TRACE_CONTEXT_HEADER_FORMAT = r'([0-9a-f]{32})(\/([0-9a-f]{16}))?(;o=(\d+))?'
+_TRACE_CONTEXT_HEADER_RE = re.compile(_TRACE_CONTEXT_HEADER_FORMAT)
 B3_HEADERS = [B3_TRACE_ID, B3_PARENT_SPAN_ID, B3_SPAN_ID, B3_SAMPLED, B3_FLAGS]
 
 
@@ -119,15 +120,14 @@ class Tracer:
         if B3_TRACE_ID not in incoming_headers and GOOGLE_LOAD_BALANCER_TRACE_HEADERS in incoming_headers:
             incoming_headers = dict(incoming_headers)
             try:
-                traceid, spanid_with_params = incoming_headers.get(GOOGLE_LOAD_BALANCER_TRACE_HEADERS, '').split('/')
-                if ';' in spanid_with_params:
-                    spanid, params = spanid_with_params.split(';')
-                else:
-                    spanid = spanid_with_params
-                incoming_headers[B3_TRACE_ID] = traceid
-                incoming_headers[B3_SPAN_ID] = spanid
-            except ValueError:
+                match = re.search(_TRACE_CONTEXT_HEADER_RE, incoming_headers[GOOGLE_LOAD_BALANCER_TRACE_HEADERS])
+            except TypeError:
                 pass
+            else:
+                if match:
+                    incoming_headers[B3_TRACE_ID] = match.group(1)
+                    incoming_headers[B3_SPAN_ID] = match.group(3)
+                    # trace_options = match.group(5)
             del incoming_headers[GOOGLE_LOAD_BALANCER_TRACE_HEADERS]
         return incoming_headers
 

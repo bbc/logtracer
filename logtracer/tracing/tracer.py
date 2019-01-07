@@ -1,4 +1,4 @@
-from copy import deepcopy
+import re
 from threading import Thread, local
 
 from google.auth.exceptions import DefaultCredentialsError
@@ -18,6 +18,8 @@ B3_SPAN_ID = 'X-B3-SpanId'
 B3_SAMPLED = 'X-B3-Sampled'
 B3_FLAGS = 'X-B3-Flags'
 GOOGLE_LOAD_BALANCER_TRACE_HEADERS = "X-Cloud-Trace-Context"
+_TRACE_CONTEXT_HEADER_FORMAT = r'([0-9a-f]{32})(\/([0-9a-f]{16}))?(;o=(\d+))?'
+_TRACE_CONTEXT_HEADER_RE = re.compile(_TRACE_CONTEXT_HEADER_FORMAT)
 B3_HEADERS = [B3_TRACE_ID, B3_PARENT_SPAN_ID, B3_SPAN_ID, B3_SAMPLED, B3_FLAGS]
 
 
@@ -115,19 +117,25 @@ class Tracer:
         self.logger.debug(f'Span started {self.memory.current_span_id}')
 
     def _extract_google_trace_headers_if_present(self, incoming_headers):
-        """Extract Google tracing headers from incoming requests if they are present."""
+        """
+        Extract Google tracing headers from incoming requests if they are present.
+
+        Regex expression based on: https://groups.google.com/forum/#!topic/google-appengine/ik5fMyvO4PQ
+        More info on format of trace:
+        https://github.com/census-instrumentation/opencensus-python/blob/1df8f58e55a0dd5eeab991b984420ba7a35721b8/openc
+        ensus/trace/propagation/google_cloud_format.py
+        """
         if B3_TRACE_ID not in incoming_headers and GOOGLE_LOAD_BALANCER_TRACE_HEADERS in incoming_headers:
             incoming_headers = dict(incoming_headers)
             try:
-                traceid, spanid_with_params = incoming_headers.get(GOOGLE_LOAD_BALANCER_TRACE_HEADERS, '').split('/')
-                if ';' in spanid_with_params:
-                    spanid, params = spanid_with_params.split(';')
-                else:
-                    spanid = spanid_with_params
-                incoming_headers[B3_TRACE_ID] = traceid
-                incoming_headers[B3_SPAN_ID] = spanid
-            except ValueError:
+                match = re.search(_TRACE_CONTEXT_HEADER_RE, incoming_headers[GOOGLE_LOAD_BALANCER_TRACE_HEADERS])
+            except TypeError:
                 pass
+            else:
+                if match:
+                    incoming_headers[B3_TRACE_ID] = match.group(1)
+                    incoming_headers[B3_SPAN_ID] = match.group(3)
+                    # trace_options = match.group(5)
             del incoming_headers[GOOGLE_LOAD_BALANCER_TRACE_HEADERS]
         return incoming_headers
 

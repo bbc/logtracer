@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 if __name__ == "__main__":
     setup(
         name="logtracer",
-        version="0.3.5",
+        version="0.3.6",
         author="Datalab",
         author_email="datalab@bbc.co.uk",
         description="Adds distributed tracing information to logger output and sends traces to the Stackdriver "

@@ -1,12 +1,13 @@
 import re
-from copy import deepcopy
+from threading import Thread, local
+
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud.trace_v2 import TraceServiceClient
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value
+
 from logtracer.exceptions import StackDriverAuthError, SpanNotStartedError
 from logtracer.requests_wrapper import RequestsWrapper, UnsupportedRequestsWrapper
 from logtracer.tracing._utils import post_span, get_timestamp, truncate_str, generate_identifier
-from threading import Thread, local
 
 SPAN_DISPLAY_NAME_BYTE_LIMIT = 128
 TRACE_LEN = 32
@@ -116,7 +117,14 @@ class Tracer:
         self.logger.debug(f'Span started {self.memory.current_span_id}')
 
     def _extract_google_trace_headers_if_present(self, incoming_headers):
-        """Extract Google tracing headers from incoming requests if they are present."""
+        """
+        Extract Google tracing headers from incoming requests if they are present.
+
+        Regex expression based on: https://groups.google.com/forum/#!topic/google-appengine/ik5fMyvO4PQ
+        More info on format of trace:
+        https://github.com/census-instrumentation/opencensus-python/blob/1df8f58e55a0dd5eeab991b984420ba7a35721b8/openc
+        ensus/trace/propagation/google_cloud_format.py
+        """
         if B3_TRACE_ID not in incoming_headers and GOOGLE_LOAD_BALANCER_TRACE_HEADERS in incoming_headers:
             incoming_headers = dict(incoming_headers)
             try:

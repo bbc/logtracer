@@ -1,4 +1,4 @@
-<aside class="warning">
+<aside class="notice">
 Deprecated, see this (unmerged) PR for replacing functionality: https://github.com/bbc/connected-data-snowdrop/pull/97
 </aside>
 

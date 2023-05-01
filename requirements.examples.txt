@@ -1,5 +1,5 @@
 requests>=2.20.0
-Flask==1.0.2
+Flask==2.3.2
 grpcio==1.10.0
 grpcio-tools==1.10.0
 protobuf==3.6.0

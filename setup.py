@@ -26,7 +26,7 @@ if __name__ == "__main__":
             'google-cloud-trace>=0.19.0',
             'requests>=2.20.0',
             'protobuf>=3.6.0',
-            'grpcio==1.16.1'
+            'grpcio==1.53.0'
         ],
         test_suite="tests",
         setup_requires=[
